@@ -1,0 +1,32 @@
+RECOMMENDED THRESHOLD SETTINGS
+============================
+
+Best for overall accuracy:
+  Level 1 threshold: 0.5
+  Level 2 threshold: 0.5
+  Accuracy: 0.8400
+  F1 Score: 0.8381
+  Level 1 FN Rate: 0.0000
+
+Best for F1 score:
+  Level 1 threshold: 0.5
+  Level 2 threshold: 0.5
+  Accuracy: 0.8400
+  F1 Score: 0.8381
+  Level 1 FN Rate: 0.0000
+
+Best for Level 1 FN/FP tradeoff:
+  Level 1 threshold: 0.5
+  Level 2 threshold: 0.5
+  Accuracy: 0.8400
+  F1 Score: 0.8381
+  Level 1 FN Rate: 0.0000
+  Level 1 FP Rate: 0.0000
+
+Best for minimizing FN rate with good F1 (>= 90% of max):
+  Level 1 threshold: 0.5
+  Level 2 threshold: 0.5
+  Accuracy: 0.8400
+  F1 Score: 0.8381
+  Level 1 FN Rate: 0.0000
+  Level 1 FP Rate: 0.0000

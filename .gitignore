@@ -1,0 +1,32 @@
+# Ignore all files by default
+*
+
+# Don't ignore directories to maintain structure
+!*/
+
+# Don't ignore .gitignore and .gitkeep files (to maintain empty directories)
+!.gitignore
+!.gitkeep
+
+# Don't ignore source files, text files and markdown files
+!*.py
+!*.md
+!*.txt
+
+# Include test_images directory and its contents
+!test_images/
+!test_images/*.jpg
+
+# Exclude model files (keep directory structure with .gitkeep)
+models/*.pth
+models/*.png
+models/*.csv
+
+# Exclude large data files but keep directory structure
+test_images/*.jpg
+receipt_dataset/train/*.jpg
+
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
