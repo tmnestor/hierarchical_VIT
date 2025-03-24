@@ -39,6 +39,16 @@ class ModelFactory:
         Returns:
             Configured transformer model
         """
+        # Workaround for OpenCV dependency in transformers
+        # This prevents the image_utils module from importing OpenCV
+        import sys
+        import types
+        
+        # Create a dummy cv2 module to avoid the actual import
+        if 'cv2' not in sys.modules:
+            cv2_mock = types.ModuleType('cv2')
+            sys.modules['cv2'] = cv2_mock
+        
         import transformers
         
         # Validate model type
@@ -65,6 +75,15 @@ class ModelFactory:
         classifier_dims = project_config.get_model_param("classifier_dims", [768, 512, 256])
         dropout_rates = project_config.get_model_param("dropout_rates", [0.4, 0.4, 0.3])
         
+        # Workaround for OpenCV dependency in transformers
+        # We'll patch the relevant functions to avoid errors
+        # This is a bit hacky but avoids the need for system dependencies
+        if 'transformers.image_utils' in sys.modules:
+            img_utils = sys.modules['transformers.image_utils']
+            # Mock the OpenCV-dependent functions with dummy implementations
+            if hasattr(img_utils, 'cv2'):
+                img_utils.cv2 = cv2_mock
+        
         # Create appropriate model type
         try:
             if model_type == "vit":
@@ -80,7 +99,10 @@ class ModelFactory:
                     config = ViTConfig(num_labels=num_classes)
                     model = ViTForImageClassification(config)
             elif model_type == "swin":
-                from transformers import SwinForImageClassification, SwinConfig
+                # Import just the needed classes without triggering the OpenCV import
+                from transformers.models.swin.configuration_swin import SwinConfig
+                from transformers.models.swin.modeling_swin import SwinForImageClassification
+                
                 if pretrained:
                     model = SwinForImageClassification.from_pretrained(
                         cls.MODEL_PATHS["swin"], 
