@@ -45,9 +45,19 @@ class ModelFactory:
         import types
         
         # Create a dummy cv2 module to avoid the actual import
-        if 'cv2' not in sys.modules:
-            cv2_mock = types.ModuleType('cv2')
-            sys.modules['cv2'] = cv2_mock
+        cv2_mock = types.ModuleType('cv2')
+        sys.modules['cv2'] = cv2_mock
+        
+        # Add necessary functions/attributes to the mock module
+        # This makes it possible for basic operations to work
+        def imread(*args, **kwargs):
+            return None
+        def resize(*args, **kwargs):
+            return None
+        cv2_mock.imread = imread
+        cv2_mock.resize = resize
+        cv2_mock.IMREAD_COLOR = 1
+        cv2_mock.INTER_LINEAR = 1
         
         import transformers
         
@@ -75,14 +85,10 @@ class ModelFactory:
         classifier_dims = project_config.get_model_param("classifier_dims", [768, 512, 256])
         dropout_rates = project_config.get_model_param("dropout_rates", [0.4, 0.4, 0.3])
         
-        # Workaround for OpenCV dependency in transformers
-        # We'll patch the relevant functions to avoid errors
-        # This is a bit hacky but avoids the need for system dependencies
-        if 'transformers.image_utils' in sys.modules:
-            img_utils = sys.modules['transformers.image_utils']
-            # Mock the OpenCV-dependent functions with dummy implementations
-            if hasattr(img_utils, 'cv2'):
-                img_utils.cv2 = cv2_mock
+        # Patch any existing transformers modules that use cv2
+        for module_name in list(sys.modules.keys()):
+            if module_name.startswith('transformers.') and hasattr(sys.modules[module_name], 'cv2'):
+                sys.modules[module_name].cv2 = cv2_mock
         
         # Create appropriate model type
         try:
