@@ -1,0 +1,63 @@
+=============================================
+       ERROR ANALYSIS SUMMARY REPORT        
+=============================================
+
+ERROR COUNTS AND EXPLANATIONS:
+----------------------------
+Level 1 false negatives: 0 (rate: 0.0000)
+  - The model correctly identifies all images that have receipts
+Level 1 false positives: 0 (rate: 0.0000)
+  - The model doesn't falsely detect receipts in images without them
+
+Level 2 false negatives: 0 (rate: 0.0000)
+  - The model doesn't miss multiple receipts
+Level 2 false positives: 2 (rate: 0.1538)
+  - The model sometimes predicts multiple receipts when there's only one (2 instances)
+
+Overall false negatives: 0 (rate: 0.0000)
+  - The hierarchical system never completely misses receipts
+Overall false positives: 0 (rate: 0.0000)
+  - The hierarchical system doesn't falsely detect receipts in empty images
+
+LEVEL 1 METRICS (0 vs 1+ receipts):
+----------------------------------
+Accuracy: 1.0000
+Balanced Accuracy: 1.0000
+F1 Score (macro): 1.0000
+False Negative Rate: 0.0000
+False Positive Rate: 0.0000
+
+Confusion Matrix:
+    Pred 0  Pred 1+
+True 0      24       0
+True 1+      0      22
+
+LEVEL 2 METRICS (1 vs 2+ receipts):
+----------------------------------
+Accuracy: 0.9091
+Balanced Accuracy: 0.9231
+F1 Score (macro): 0.9083
+False Negative Rate: 0.0000
+False Positive Rate: 0.1538
+
+Confusion Matrix:
+    Pred 1  Pred 2+
+True 1      11       2
+True 2+      0       9
+
+OVERALL METRICS (binary receipt detection):
+----------------------------------------
+Accuracy: 1.0000
+Balanced Accuracy: 1.0000
+F1 Score (macro): 1.0000
+False Negative Rate: 0.0000
+False Positive Rate: 0.0000
+
+Confusion Matrix:
+    Pred 0  Pred 1+
+True 0      24       0
+True 1+      0      22
+
+======== SUMMARY AND RECOMMENDATIONS ========
+Primary issue: Level 2 false positives (detecting multiple receipts when only one exists)
+Recommendation: Improve level 2 model discrimination by adding more diverse single receipt examples

@@ -60,10 +60,10 @@ Our enhanced Bayesian correction implements this by:
 
 ```bash
 python train_bayesian_hierarchical.py \
-    --train_csv rectangle_dataset/train.csv \
-    --train_dir rectangle_dataset/train \
-    --val_csv rectangle_dataset/val.csv \
-    --val_dir rectangle_dataset/val \
+    --train_csv receipts/train.csv \
+    --train_dir receipts/train \
+    --val_csv receipts/val.csv \
+    --val_dir receipts/val \
     --model_type swin \
     --output_dir models/bayesian_hierarchical \
     --epochs 30 \
@@ -88,8 +88,8 @@ python bayesian_temperature_calibration.py \
     --mode evaluate \
     --model_base_path models/bayesian_hierarchical \
     --model_type swin \
-    --test_csv rectangle_dataset/val.csv \
-    --test_dir rectangle_dataset/val \
+    --test_csv receipts/val.csv \
+    --test_dir receipts/val \
     --use-cpu
 ```
 
@@ -117,8 +117,8 @@ python bayesian_temperature_calibration.py \
     --sweep \
     --model_base_path models/bayesian_hierarchical \
     --model_type swin \
-    --test_csv receipt_dataset/test.csv \
-    --test_dir receipt_dataset/test \
+    --test_csv receipts/test.csv \
+    --test_dir receipts/test \
     --output_dir evaluation/sweep \
     --min_temp 0.001 \
     --max_temp 0.1 \
@@ -146,8 +146,8 @@ python test_bayesian_calibration.py --model_type swin --use-cpu
 # Complete evaluation with F1 score optimization
 python test_bayesian_calibration.py \
     --model_type swin \
-    --test_csv receipt_dataset/test.csv \
-    --test_dir receipt_dataset/test \
+    --test_csv receipts/test.csv \
+    --test_dir receipts/test \
     --sweep \
     --min_temp 0.001 \
     --max_temp 0.1 \
@@ -158,11 +158,11 @@ python test_bayesian_calibration.py \
 
   python test_bayesian_calibration.py \
       --model_type swin \
-      --test_csv rectangle_dataset/test.csv \
-      --test_dir rectangle_dataset/test \
+      --test_csv receipts/test.csv \
+      --test_dir receipts/test \
       --output_dir evaluation/calibrated_hierarchical \
       --mode bayesian_sweep \
-      --bayesian_temps 0.05
+      --bayesian_temps 0.001
 ```
 
 
@@ -177,6 +177,17 @@ python bayesian_temperature_calibration.py \
       --bayesian_temperature 0.05 \
       --debug
 
+```
+
+### Analyse Model Errors
+
+```bash
+python analyze_model_errors.py --test_csv receipts/test.csv \
+                                --test_dir receipts/test \
+                                --model_base_path models/bayesian_hierarchical \
+                                --model_type swin \
+                                --output_dir error_analysis \
+                                --use_calibrated
 ```
 
 1. bayesian_sweep: Tests the model with Bayesian correction using the temperature values provided in

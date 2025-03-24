@@ -2,27 +2,27 @@ RECOMMENDED BAYESIAN CORRECTION SETTINGS
 =====================================
 
 Best for overall accuracy:
-  Bayesian Temperature: 0.0500
-  Accuracy: 0.9900
-  F1 Score: 0.9867
+  Bayesian Temperature: 0.0010
+  Accuracy: 0.9130
+  F1 Score: 0.8603
   Level 1 FN Rate: 0.0000
 
 Best for F1 score:
-  Bayesian Temperature: 0.0500
-  Accuracy: 0.9900
-  F1 Score: 0.9867
+  Bayesian Temperature: 0.0010
+  Accuracy: 0.9130
+  F1 Score: 0.8603
   Level 1 FN Rate: 0.0000
 
 Best for Level 1 FN/FP tradeoff:
-  Bayesian Temperature: 0.0500
-  Accuracy: 0.9900
-  F1 Score: 0.9867
+  Bayesian Temperature: 0.0010
+  Accuracy: 0.9130
+  F1 Score: 0.8603
   Level 1 FN Rate: 0.0000
   Level 1 FP Rate: 0.0000
 
 Best for minimizing FN rate with good F1 (>= 90% of max):
-  Bayesian Temperature: 0.0500
-  Accuracy: 0.9900
-  F1 Score: 0.9867
+  Bayesian Temperature: 0.0010
+  Accuracy: 0.9130
+  F1 Score: 0.8603
   Level 1 FN Rate: 0.0000
   Level 1 FP Rate: 0.0000
