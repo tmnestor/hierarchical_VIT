@@ -19,11 +19,8 @@ from tqdm import tqdm
 from PIL import Image
 from sklearn.metrics import confusion_matrix, accuracy_score, balanced_accuracy_score, f1_score
 
-try:
-    import cv2
-except ImportError:
-    print("Warning: OpenCV (cv2) not found. Image annotation will be disabled.")
-    cv2 = None
+# We don't need OpenCV anymore - using PIL for image processing
+cv2 = None  # Set to None to indicate OpenCV is not available
 
 from model_factory import ModelFactory
 from device_utils import get_device
@@ -438,7 +435,7 @@ def copy_and_annotate_image(src_path, dest_dir, dest_filename, annotation_text=N
         annotation_text: Text to annotate on the image
         annotate: Whether to annotate the image
     """
-    if not annotate or cv2 is None:
+    if not annotate:
         # Simple copy without annotation
         shutil.copy2(src_path, os.path.join(dest_dir, dest_filename))
         return
@@ -451,24 +448,23 @@ def copy_and_annotate_image(src_path, dest_dir, dest_filename, annotation_text=N
         if img.mode != "RGB":
             img = img.convert("RGB")
         
-        # Convert to numpy array for OpenCV
-        img_np = np.array(img)
+        # Create a drawing context
+        from PIL import ImageDraw, ImageFont
+        draw = ImageDraw.Draw(img)
         
-        # Add annotation text
-        cv2.putText(
-            img_np,
-            annotation_text,
-            (10, 30),  # Position (x, y)
-            cv2.FONT_HERSHEY_SIMPLEX,  # Font
-            0.8,  # Font scale
-            (255, 0, 0),  # Color (BGR)
-            2,  # Thickness
-            cv2.LINE_AA  # Line type
-        )
+        # Try to load a font, or use default
+        try:
+            # Try to get a system font - size will depend on the platform
+            font = ImageFont.truetype("Arial", 24)  # Adjust size as needed
+        except IOError:
+            # Fall back to default font
+            font = ImageFont.load_default()
         
-        # Convert back to PIL and save
-        img_annotated = Image.fromarray(img_np)
-        img_annotated.save(os.path.join(dest_dir, dest_filename))
+        # Add annotation text in blue at the top of the image
+        draw.text((10, 10), annotation_text, fill=(0, 0, 255), font=font)
+        
+        # Save the annotated image
+        img.save(os.path.join(dest_dir, dest_filename))
         
     except Exception as e:
         print(f"Error annotating image {src_path}: {e}")

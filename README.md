@@ -435,3 +435,18 @@ Model Storage
   - evaluation/sweep/ - Temperature sweep results
   - evaluation/hierarchical/ - Hierarchical model evaluation
   - evaluation/calibrated_hierarchical/ - Calibrated model evaluation
+
+
+python train_bayesian_hierarchical.py \
+    --train_csv rectangle_dataset/train.csv \
+    --train_dir rectangle_dataset/train \
+    --val_csv rectangle_dataset/val.csv \
+    --val_dir rectangle_dataset/val \
+    --model_type swin \
+    --output_dir models/bayesian_hierarchical \
+    --epochs 30 \
+    --batch_size 16 \
+    --learning_rate 0.001 \
+    --backbone_lr_multiplier 0.1 \
+    --look_at_misclassifications \
+    --use_focal_loss --focal_gamma 2.0

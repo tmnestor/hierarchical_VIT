@@ -20,7 +20,7 @@ import os
 import json
 from pathlib import Path
 from tqdm import tqdm
-import cv2
+from PIL import Image, ImageOps, ImageFilter, ImageEnhance
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, confusion_matrix, classification_report
 
 from device_utils import get_device
