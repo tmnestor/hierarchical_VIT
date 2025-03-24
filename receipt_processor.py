@@ -1,8 +1,7 @@
-import cv2
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 import torch
 import numpy as np
+from PIL import Image, ImageOps, ImageFilter, ImageEnhance
+from torchvision import transforms
 from config import get_config
 
 class ReceiptProcessor:
@@ -18,64 +17,57 @@ class ReceiptProcessor:
         std = config.get_model_param("normalization_std", [0.229, 0.224, 0.225])
         
         if augment:
-            # Enhanced transform with augmentations for training
-            self.transform = A.Compose([
-                A.Resize(height=self.img_size, width=self.img_size),
-                A.OneOf([
-                    A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.8),
-                    A.RandomGamma(gamma_limit=(80, 120), p=0.5),
-                ], p=0.8),
-                A.OneOf([
-                    A.GaussianBlur(blur_limit=(3, 5), p=0.6),
-                    A.GaussNoise(p=0.4),  # Simplified GaussNoise
-                ], p=0.5),
-                A.Affine(scale=(0.8, 1.2), translate_percent=(0, 0.1), rotate=(-15, 15), p=0.7),
-                A.OneOf([
-                    A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
-                    A.OpticalDistortion(distort_limit=0.3, p=0.5),
-                ], p=0.4),
-                A.CoarseDropout(p=0.5),  # Simplified CoarseDropout with default parameters
-                A.Normalize(mean=mean, std=std),
-                ToTensorV2(),
+            # Basic transform with limited augmentations using torchvision
+            self.transform = transforms.Compose([
+                transforms.Resize((self.img_size, self.img_size)),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomRotation(15),
+                transforms.ColorJitter(brightness=0.2, contrast=0.2),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std),
             ])
         else:
             # Standard transform for evaluation
-            self.transform = A.Compose([
-                A.Resize(height=self.img_size, width=self.img_size),
-                A.Normalize(mean=mean, std=std),
-                ToTensorV2(),
+            self.transform = transforms.Compose([
+                transforms.Resize((self.img_size, self.img_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std),
             ])
         
     def preprocess_image(self, image_path):
         """Process a scanned document image for receipt counting."""
-        # Read image
-        img = cv2.imread(image_path)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # Read image using PIL
+        img = Image.open(image_path).convert('RGB')
         
         # Apply preprocessing
-        preprocessed = self.transform(image=img)["image"]
+        preprocessed = self.transform(img)
         
         # Add batch dimension
         return preprocessed.unsqueeze(0)
         
     def enhance_scan_quality(self, image_path, output_path=None):
-        """Enhance scanned image quality for better receipt detection."""
-        img = cv2.imread(image_path)
+        """
+        Basic image enhancement using PIL.
+        Note: This is a simplified version without adaptive thresholding
+        that was available in OpenCV.
+        """
+        # Open image
+        img = Image.open(image_path).convert('RGB')
         
         # Convert to grayscale
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = img.convert('L')
         
-        # Apply adaptive thresholding
-        thresh = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-            cv2.THRESH_BINARY, 11, 2
-        )
+        # Increase contrast
+        enhancer = ImageEnhance.Contrast(gray)
+        enhanced = enhancer.enhance(2.0)
         
-        # Apply morphological operations to reduce noise
-        kernel = np.ones((2, 2), np.uint8)
-        opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        # Apply some sharpening
+        enhanced = enhanced.filter(ImageFilter.SHARPEN)
+        
+        # Apply threshold to make it more binary-like
+        enhanced = enhanced.point(lambda x: 0 if x < 128 else 255, '1')
         
         if output_path:
-            cv2.imwrite(output_path, opening)
+            enhanced.save(output_path)
             
-        return opening
+        return np.array(enhanced)

@@ -1,5 +1,5 @@
-Best temperature for accuracy: 0.001000
-Best temperature for balanced accuracy: 0.001000
-Best temperature for F1 score: 0.001000
+Best temperature for accuracy: 0.100000
+Best temperature for balanced accuracy: 0.100000
+Best temperature for F1 score: 0.100000
 
-Recommended temperature (optimized for F1 score): 0.001000
+Recommended temperature (optimized for F1 score): 0.100000

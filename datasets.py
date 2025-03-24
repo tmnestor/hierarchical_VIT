@@ -96,13 +96,10 @@ class ReceiptDataset(Dataset):
             print(f"Warning: Could not find image {filename} in any potential location.")
             image = Image.new('RGB', (self.image_size, self.image_size), color=(0, 0, 0))
         
-        # Convert to numpy array for transformation
-        image_np = np.array(image)
-        
-        # Apply transformations if available
+        # Apply transformations if available - using PIL-based transforms now
         if self.transform:
-            transformed = self.transform(image=image_np)
-            image_tensor = transformed["image"]
+            # The torchvision transforms take the PIL image directly
+            image_tensor = self.transform(image)
         else:
             # Manual resize and normalization if no transform provided
             image = image.resize((self.image_size, self.image_size), Image.BILINEAR)

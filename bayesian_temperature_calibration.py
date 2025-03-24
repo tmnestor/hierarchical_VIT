@@ -359,19 +359,8 @@ class BayesianCalibratedPredictor:
                 print(f"Warning: Image enhancement failed: {e}")
         
         try:
-            # Read image directly with OpenCV
-            img = cv2.imread(image_path)
-            if img is None:
-                raise ValueError(f"Failed to load image: {image_path}")
-                
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            
-            # Apply transform from processor
-            img_tensor = self.processor.transform(image=img)["image"]
-            
-            # Ensure tensor has the correct shape
-            if len(img_tensor.shape) == 3:
-                img_tensor = img_tensor.unsqueeze(0)
+            # Use the processor to preprocess the image - it now uses PIL internally
+            img_tensor = self.processor.preprocess_image(image_path)
             
             # Move to device
             img_tensor = img_tensor.to(self.device)
