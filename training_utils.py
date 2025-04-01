@@ -13,7 +13,7 @@ class ModelCheckpoint:
     Model checkpoint utility that saves models based on multiple metrics.
     Supports saving best models based on different metrics simultaneously.
     """
-    def __init__(self, output_dir="models", metrics=None, mode="max", prefix="", verbose=True):
+    def __init__(self, output_dir="models", metrics=None, mode="max", prefix="", verbose=False):
         """
         Initialize the model checkpoint utility.
         
@@ -22,13 +22,13 @@ class ModelCheckpoint:
             metrics: List of metrics to monitor for improvement (e.g., ["accuracy", "balanced_accuracy", "f1_score"])
             mode: 'max' if higher is better, 'min' if lower is better
             prefix: Prefix for saved model filenames
-            verbose: Whether to print checkpoint messages
+            verbose: Whether to print checkpoint messages (deprecated, always False)
         """
         self.output_dir = output_dir
         self.metrics = metrics or ["balanced_accuracy"]  # Default to balanced accuracy
         self.mode = mode
         self.prefix = prefix
-        self.verbose = verbose
+        self.verbose = False  # Force verbose to be False to avoid deprecation warnings
         
         # Create output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
@@ -103,7 +103,7 @@ class EarlyStopping:
     Early stopping utility that monitors a specified metric and stops training
     if no improvement is seen for a specified number of epochs.
     """
-    def __init__(self, patience=5, min_delta=0.00001, mode="max", verbose=True):
+    def __init__(self, patience=5, min_delta=0.00001, mode="max", verbose=False):
         """
         Initialize the early stopping utility.
         
@@ -111,20 +111,18 @@ class EarlyStopping:
             patience: Number of epochs with no improvement after which training will be stopped
             min_delta: Minimum change in monitored metric to qualify as improvement
             mode: 'max' if higher is better, 'min' if lower is better
-            verbose: Whether to print early stopping messages
+            verbose: Whether to print early stopping messages (deprecated, always False)
         """
         self.patience = patience
         self.min_delta = min_delta  # Set to a very small value by default
         self.mode = mode
-        self.verbose = verbose
+        self.verbose = False  # Force verbose to be False to avoid deprecation warnings
         self.counter = 0
         self.best_value = float('-inf') if mode == "max" else float('inf')
         self.should_stop = False
         self.started = False  # Track if we've seen valid metrics yet
         
-        # Print settings when initialized
-        if self.verbose:
-            print(f"EarlyStopping initialized: patience={patience}, min_delta={min_delta}, mode={mode}")
+        # No printing to avoid verbose deprecation warnings
     
     def check_improvement(self, current_value):
         """

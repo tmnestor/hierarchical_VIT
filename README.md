@@ -254,7 +254,7 @@ python train_vit_classification.py -tc receipt_dataset/train.csv -td receipt_dat
 python train_hierarchical_model.py -tc receipt_dataset_swinv2/train.csv -td receipt_dataset_swinv2/train \
                                   -vc receipt_dataset_swinv2/val.csv -vd receipt_dataset_swinv2/val \
                                   -m swin -o models/hierarchical_swin \
-                                  --use_multiclass -e 25 -b 16 -s 42 -d -w 1  # -w 1 avoids shared memory issues
+                                  --multiclass -e 25 -b 16 -s 42 -d -w 1  # -w 1 avoids shared memory issues
 
 # Train Bayesian-aware hierarchical model
 python train_bayesian_hierarchical.py \
