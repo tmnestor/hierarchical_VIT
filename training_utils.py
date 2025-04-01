@@ -312,7 +312,7 @@ def print_validation_results(metrics, verbose=True):
             print(f"  Class {i}: {acc:.2%}")
 
 
-def plot_confusion_matrix(predictions, ground_truth, output_path=None, figsize=(12, 10)):
+def plot_confusion_matrix(predictions, ground_truth, output_path=None, figsize=(12, 10), class_names=None):
     """
     Plot a confusion matrix for classification results.
     
@@ -321,6 +321,7 @@ def plot_confusion_matrix(predictions, ground_truth, output_path=None, figsize=(
         ground_truth: List or array of ground truth labels
         output_path: Path to save the plot (if None, the plot will be shown but not saved)
         figsize: Figure size (width, height) in inches
+        class_names: Optional list of class names to use instead of numeric labels
         
     Returns:
         tuple: (accuracy, balanced_accuracy)
@@ -337,9 +338,14 @@ def plot_confusion_matrix(predictions, ground_truth, output_path=None, figsize=(
     plt.title('Confusion Matrix')
     plt.colorbar()
     
-    classes = [str(i) for i in unique_classes]
+    # Use class_names if provided and matches the number of unique classes
+    if class_names and len(class_names) == len(unique_classes):
+        classes = class_names
+    else:
+        classes = [str(i) for i in unique_classes]
+    
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes)
+    plt.xticks(tick_marks, classes, rotation=45, ha='right')
     plt.yticks(tick_marks, classes)
     
     # Add text annotations to confusion matrix
@@ -367,8 +373,11 @@ def plot_confusion_matrix(predictions, ground_truth, output_path=None, figsize=(
             class_accuracies.append(cm[i, i] / total_class)
     balanced_accuracy = np.mean(class_accuracies) if class_accuracies else 0
     
+    # Calculate F1 score
+    f1_macro = f1_score(ground_truth, predictions, average='macro')
+    
     # Add summary statistics
-    stats_text = f"Overall Accuracy: {accuracy:.2%}\nBalanced Accuracy: {balanced_accuracy:.2%}"
+    stats_text = f"Overall Accuracy: {accuracy:.2%}\nBalanced Accuracy: {balanced_accuracy:.2%}\nF1 Macro: {f1_macro:.2%}"
     plt.figtext(0.02, 0.02, stats_text, fontsize=12)
     
     # Save plot if output path is provided

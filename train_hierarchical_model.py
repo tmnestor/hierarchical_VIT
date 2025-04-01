@@ -257,26 +257,80 @@ def train_hierarchical_model(
     
     # Calculate hierarchical metrics
     accuracy = accuracy_score(all_targets, all_predictions)
-    balanced_accuracy = balanced_accuracy_score(all_targets, all_predictions)
-    f1_macro = f1_score(all_targets, all_predictions, average='macro')
+    
+    # Convert multiclass predictions to simplified 0, 1, 2+ classification
+    simplified_targets = []
+    simplified_predictions = []
+    
+    for target, pred in zip(all_targets, all_predictions):
+        # Simplify targets (0, 1, 2+)
+        if target == 0:
+            simplified_targets.append(0)
+        elif target == 1:
+            simplified_targets.append(1)
+        else:  # 2+
+            simplified_targets.append(2)
+            
+        # Simplify predictions (0, 1, 2+)
+        if pred == 0:
+            simplified_predictions.append(0)
+        elif pred == 1:
+            simplified_predictions.append(1)
+        else:  # 2+
+            simplified_predictions.append(2)
+    
+    # Calculate metrics for 0, 1, 2+ classification
+    simplified_accuracy = accuracy_score(simplified_targets, simplified_predictions)
+    simplified_balanced_accuracy = balanced_accuracy_score(simplified_targets, simplified_predictions)
+    simplified_f1_macro = f1_score(simplified_targets, simplified_predictions, average='macro')
+    
+    # Get per-class metrics
+    class_names = ["0 receipts", "1 receipt", "2+ receipts"]
+    simplified_report = classification_report(
+        simplified_targets, 
+        simplified_predictions, 
+        target_names=class_names,
+        output_dict=True
+    )
     
     print(f"\nHierarchical Model Validation Metrics:")
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"Balanced Accuracy: {balanced_accuracy:.4f}")
-    print(f"F1 Macro: {f1_macro:.4f}")
+    print(f"Original Accuracy: {accuracy:.4f}")
+    print(f"\nSimplified Classification (0, 1, 2+):")
+    print(f"Accuracy: {simplified_accuracy:.4f}")
+    print(f"Balanced Accuracy: {simplified_balanced_accuracy:.4f}")
+    print(f"F1 Macro: {simplified_f1_macro:.4f}")
     
-    # Plot confusion matrix for hierarchical model
+    # Print per-class metrics
+    print("\nPer-class Performance:")
+    for cls in class_names:
+        print(f"{cls}: F1 = {simplified_report[cls]['f1-score']:.4f}, "
+              f"Precision = {simplified_report[cls]['precision']:.4f}, "
+              f"Recall = {simplified_report[cls]['recall']:.4f}")
+    
+    # Plot confusion matrix for hierarchical model - both original and simplified
     plot_confusion_matrix(
         all_predictions,
         all_targets,
-        output_path=output_path / f"{model_type}_hierarchical_confusion.png",
+        output_path=output_path / f"{model_type}_hierarchical_confusion_full.png",
+    )
+    
+    # Plot simplified confusion matrix (0, 1, 2+)
+    plot_confusion_matrix(
+        simplified_predictions,
+        simplified_targets,
+        output_path=output_path / f"{model_type}_hierarchical_confusion_simplified.png",
+        class_names=class_names
     )
     
     # Save hierarchical metrics
     pd.DataFrame({
-        'accuracy': [accuracy],
-        'balanced_accuracy': [balanced_accuracy],
-        'f1_macro': [f1_macro]
+        'original_accuracy': [accuracy],
+        'simplified_accuracy': [simplified_accuracy],
+        'simplified_balanced_accuracy': [simplified_balanced_accuracy],
+        'simplified_f1_macro': [simplified_f1_macro],
+        'f1_class0': [simplified_report['0 receipts']['f1-score']],
+        'f1_class1': [simplified_report['1 receipt']['f1-score']],
+        'f1_class2plus': [simplified_report['2+ receipts']['f1-score']]
     }).to_csv(output_path / f"{model_type}_hierarchical_metrics.csv", index=False)
     
     print("\n" + "="*80)
