@@ -1,0 +1,2 @@
+bayesian_temp,accuracy,balanced_accuracy,f1_macro,level1_accuracy,level1_balanced_accuracy,level2_accuracy,level2_balanced_accuracy,level1_fn_rate,level1_fp_rate,level2_fn_rate,level2_fp_rate,level1_confusion_matrix,level2_confusion_matrix,overall_confusion_matrix
+0.001,0.9130434782608695,0.8518518518518517,0.8603174603174604,1.0,1.0,0.8181818181818182,0.7777777777777778,0.0,0.0,0.4444444444444444,0.0,"[[24.0, 0.0], [0.0, 22.0]]","[[13.0, 0.0], [4.0, 5.0]]","[[24, 0, 0], [0, 13, 0], [0, 4, 5]]"

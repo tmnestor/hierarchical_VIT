@@ -15,6 +15,7 @@
 !*.jpg
 !*.jpeg
 !*.png
+!*.csv
 
 # Include test_images directory and its contents
 !test_images/
