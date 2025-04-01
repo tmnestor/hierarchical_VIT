@@ -153,15 +153,17 @@ def train_hierarchical_model(
     print("EVALUATING COMPLETE HIERARCHICAL MODEL ON VALIDATION SET")
     print("="*80)
     
-    # Load trained models
+    # Load trained models with correct number of classes
     level1_model = ModelFactory.load_model(
         path=level1_dir / f"receipt_counter_{model_type}_best.pth",
-        model_type=model_type
+        model_type=model_type,
+        num_classes=2  # Level 1 is binary classification (0 vs 1+)
     ).to(get_device())
     
     level2_model = ModelFactory.load_model(
         path=level2_dir / f"receipt_counter_{model_type}_best.pth",
-        model_type=model_type
+        model_type=model_type,
+        num_classes=2  # Level 2 is binary classification (1 vs 2+)
     ).to(get_device())
     
     # Load the multiclass model if needed
@@ -169,7 +171,8 @@ def train_hierarchical_model(
     if multiclass:
         multiclass_model = ModelFactory.load_model(
             path=multiclass_dir / f"receipt_counter_{model_type}_best.pth",
-            model_type=model_type
+            model_type=model_type,
+            num_classes=4  # Multiclass is 4 classes (2, 3, 4, 5)
         ).to(get_device())
     
     # Create a validation dataset with original labels
