@@ -33,6 +33,7 @@ from device_utils import get_device
 from datasets import ReceiptDataset
 from training_utils import validate
 from reproducibility import set_seed
+from config import get_config
 
 
 # Define Level2Dataset as a class at module level for proper pickling
@@ -1318,6 +1319,13 @@ def parse_arguments():
     repro_group.add_argument(
         "--deterministic", "-d", action="store_true", help="Enable deterministic mode"
     )
+    
+    # Performance options
+    perf_group = parser.add_argument_group("Performance")
+    perf_group.add_argument(
+        "--workers", "-w", type=int, 
+        help="Number of dataloader workers (default: from config, typically 4). Set to 0 or 1 to avoid shared memory errors."
+    )
 
     args = parser.parse_args()
 
@@ -1339,6 +1347,16 @@ def parse_arguments():
 def main():
     # Parse arguments
     args, level1_weights, level2_weights = parse_arguments()
+    
+    # Get configuration singleton
+    config = get_config()
+    
+    # Set number of workers if specified
+    if args.workers is not None:
+        config.update_model_param("num_workers", args.workers)
+        print(f"Using {args.workers} dataloader workers (custom value from command line)")
+        if args.workers <= 1:
+            print("Reduced worker count should help avoid shared memory (shm) issues")
 
     # Create trainer
     trainer = BayesianHierarchicalTrainer(
