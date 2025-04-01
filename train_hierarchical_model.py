@@ -154,21 +154,21 @@ def train_hierarchical_model(
     print("="*80)
     
     # Load trained models
-    level1_model = ModelFactory.load_transformer(
-        model_path=level1_dir / f"receipt_counter_{model_type}_best.pth",
+    level1_model = ModelFactory.load_model(
+        path=level1_dir / f"receipt_counter_{model_type}_best.pth",
         model_type=model_type
     ).to(get_device())
     
-    level2_model = ModelFactory.load_transformer(
-        model_path=level2_dir / f"receipt_counter_{model_type}_best.pth",
+    level2_model = ModelFactory.load_model(
+        path=level2_dir / f"receipt_counter_{model_type}_best.pth",
         model_type=model_type
     ).to(get_device())
     
     # Load the multiclass model if needed
     multiclass_model = None
     if multiclass:
-        multiclass_model = ModelFactory.load_transformer(
-            model_path=multiclass_dir / f"receipt_counter_{model_type}_best.pth",
+        multiclass_model = ModelFactory.load_model(
+            path=multiclass_dir / f"receipt_counter_{model_type}_best.pth",
             model_type=model_type
         ).to(get_device())
     
@@ -230,11 +230,11 @@ def train_hierarchical_model(
                 # For samples with 2+ receipts prediction
                 if multiclass_model and (preds_level2 == 1).sum() > 0:
                     # Get samples predicted to have 2+ receipts
-                    multiple_receipts_mask = has_receipts_mask.clone()
-                    multiple_receipt_indices = np.where(has_receipts_mask)[0]
-                    multiple_receipts_mask[multiple_receipt_indices[preds_level2 == 0]] = False
+                    multiple_receipts_mask = np.zeros_like(has_receipts_mask, dtype=bool)
+                    multiple_receipt_indices = np.where(has_receipts_mask)[0][preds_level2 == 1]
+                    multiple_receipts_mask[multiple_receipt_indices] = True
                     
-                    multiple_receipt_images = images[multiple_receipts_mask]
+                    multiple_receipt_images = images[torch.tensor(multiple_receipts_mask)]
                     
                     # Multiclass prediction
                     outputs_multiclass = multiclass_model(multiple_receipt_images)
@@ -243,7 +243,7 @@ def train_hierarchical_model(
                     preds_multiclass = torch.argmax(outputs_multiclass, dim=1).cpu().numpy() + 2
                     
                     # Set final predictions for multiple receipt samples
-                    batch_predictions[multiple_receipts_mask.cpu().numpy()] = preds_multiclass
+                    batch_predictions[multiple_receipts_mask] = preds_multiclass
                 else:
                     # Without multiclass model, just set to 2
                     multiple_receipt_indices = np.where(has_receipts_mask)[0][preds_level2 == 1]
