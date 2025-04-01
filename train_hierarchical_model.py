@@ -229,7 +229,7 @@ def train_level1_model(
         mode='max',
         factor=0.5,
         patience=3,
-        verbose=False  # Set to False to avoid deprecation warnings,
+        verbose=False,  # Set to False to avoid deprecation warnings
         min_lr=1e-6
     )
     
@@ -589,7 +589,7 @@ def train_level2_model(
         mode='max',
         factor=0.5,
         patience=3,
-        verbose=False  # Set to False to avoid deprecation warnings,
+        verbose=False,  # Set to False to avoid deprecation warnings
         min_lr=1e-6
     )
     
@@ -830,7 +830,7 @@ def train_multiclass_model(
         mode='max',
         factor=0.5,
         patience=3,
-        verbose=False  # Set to False to avoid deprecation warnings,
+        verbose=False,  # Set to False to avoid deprecation warnings
         min_lr=1e-6
     )
     

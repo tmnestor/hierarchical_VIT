@@ -31,6 +31,15 @@ This hierarchical structure delivers several advantages:
 
 ## 🔄 Recent Updates
 
+### July 2025 Update: Lottery Ticket Hypothesis Pruning
+
+- **✂️ Model Pruning Support**: Implemented Lottery Ticket Hypothesis pruning for model compression
+- **🎯 Winning Tickets**: Ability to find sparse subnetworks that perform as well or better than dense models
+- **📊 Pruning Analysis**: Added tools for analyzing and visualizing pruning results
+- **📉 Size Reduction**: Achieve up to 90% model size reduction while maintaining performance
+- **🚀 Hierarchical Pruning**: Support for pruning individual levels in hierarchical models
+- **📋 Pruning Utilities**: New prune_utils.py module for reusable pruning operations
+
 ### June 2025 Update: SwinV2 Migration
 
 - **✨ New Model Architecture**: Upgraded from Swin to SwinV2 (microsoft/swinv2-tiny-patch4-window8-256)
@@ -229,17 +238,17 @@ The system uses two distinct temperature parameters:
 ### Training Scripts
 
 ```bash
+# Train SwinV2-Tiny model
+python train_swin_classification.py -tc receipt_dataset_swinv2/train.csv -td receipt_dataset_swinv2/train \
+                           -vc receipt_dataset_swinv2/val.csv -vd receipt_dataset_swinv2/val \
+                           -e 20 -b 16 -o models/swinv2 -s 42 -d \
+                           -l 1e-4 --workers 1  # Use --workers 1 to avoid shared memory issues
+
 # Train ViT-Base model with reproducibility
 python train_vit_classification.py -tc receipt_dataset/train.csv -td receipt_dataset/train \
                           -vc receipt_dataset/val.csv -vd receipt_dataset/val \
                           -e 20 -b 32 -o models -s 42 -d \
                           -l 5e-5 
-
-# Train SwinV2-Tiny model
-python train_swin_classification.py -tc receipt_dataset_swinv2/train.csv -td receipt_dataset_swinv2/train \
-                           -vc receipt_dataset_swinv2/val.csv -vd receipt_dataset_swinv2/val \
-                           -e 20 -b 16 -o models/swinv2 -s 42 -d \
-                           -l 5e-5 --workers 1  # Use --workers 1 to avoid shared memory issues
 
 # Train hierarchical model with all components
 python train_hierarchical_model.py -tc receipt_dataset_swinv2/train.csv -td receipt_dataset_swinv2/train \
@@ -373,6 +382,14 @@ python analyze_model_errors.py --test_csv receipt_dataset_swinv2/test.csv \
 - `swinv2_model_download.py` - Utility to pre-download SwinV2 model
 - `swinv2_update_helper.py` - Helper for updating code to SwinV2
 
+### Model Pruning
+
+- `prune_utils.py` - Core utilities for Lottery Ticket Hypothesis pruning
+- `prune_hierarchical_model.py` - Apply pruning to hierarchical models
+- `analyze_lottery_tickets.py` - Analyze and visualize pruning results
+- `evaluate_pruned_model.py` - Evaluate pruned models
+- `lottery_ticket_demo.py` - Demonstration of Lottery Ticket Hypothesis
+
 ## 🏆 Results and Performance
 
 The hierarchical approach with Bayesian correction consistently outperforms flat classification models, particularly for minority classes. Key improvements:
@@ -381,6 +398,56 @@ The hierarchical approach with Bayesian correction consistently outperforms flat
 - **25-30%** improvement in F1 score for minority classes
 - Significantly more reliable confidence scores
 - Better generalization to new data
+
+## 🪓 Lottery Ticket Hypothesis Pruning
+
+This project now implements model pruning based on the Lottery Ticket Hypothesis (LTH), which allows for creating smaller, more efficient models without sacrificing performance.
+
+### The Lottery Ticket Hypothesis
+
+The Lottery Ticket Hypothesis proposes that dense neural networks contain sparse subnetworks (winning tickets) that - when trained in isolation - can reach similar or better performance than the original network. Our implementation follows the original approach:
+
+1. **Train** the full model to convergence
+2. **Prune** a percentage of the smallest-magnitude weights
+3. **Reset** remaining weights to their ORIGINAL initialization values (crucial step)
+4. **Retrain** the pruned network
+5. **Repeat** for iterative pruning if needed
+
+### Key Benefits
+
+- **Model Compression**: Reduce model size by up to 90% while maintaining accuracy
+- **Inference Speed**: Smaller models require less computation
+- **Memory Efficiency**: Reduced parameter count means lower memory requirements
+- **Edge Deployment**: Pruned models are more suitable for resource-constrained devices
+
+### Pruning Commands
+
+```bash
+# Run Lottery Ticket pruning on a multiclass classification model
+python lottery_ticket_demo.py --train_csv receipt_dataset_swinv2/train.csv \
+                                --train_dir receipt_dataset_swinv2/train \
+                                --val_csv receipt_dataset_swinv2/val.csv \
+                                --val_dir receipt_dataset_swinv2/val \
+                                --model_type swin \
+                                --pruning_percentages 0 5 10 15 20 \
+                                --output_dir demo_outputs \
+                                --epochs 10 \
+                                --workers 4 \
+                                --lr 1e-4
+
+# Analyze pruning results
+python analyze_lottery_tickets.py --results_dir models/pruned/hierarchical \
+                                 --output_dir models/pruned/hierarchical/analysis \
+                                 --metric F1_Macro
+
+# Evaluate a pruned model
+python evaluate_pruned_model.py --model_path models/pruned/hierarchical/level1/pruned_80.0pct/pruned_swin_model.pth \
+                               --test_csv rreceipt_dataset_swinv2/test.csv \
+                               --test_dir receipt_dataset_swinv2/test \
+                               --output_dir evaluation/pruned \
+                               --model_type swin \
+                               --level level1
+```
 
 ## 🙏 Acknowledgments and References
 
@@ -392,6 +459,7 @@ This project builds upon several key papers and projects:
 4. [Temperature Scaling for Neural Networks](https://arxiv.org/abs/1706.04599) - Guo et al.
 5. [Bayesian Calibration](https://arxiv.org/abs/1706.02409) - Kendall & Gal
 6. [Hierarchical Classification](https://arxiv.org/abs/1912.03192) - Peng et al.
+7. [The Lottery Ticket Hypothesis](https://arxiv.org/abs/1803.03635) - Frankle & Carbin
 
 ## 📄 License
 
