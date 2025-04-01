@@ -200,9 +200,8 @@ def train_level1_model(
     model = ModelFactory.create_transformer(
         model_type=model_type,
         pretrained=True,
-        num_classes=2,  # Binary classification
-        offline=False  # Allow downloading if needed
-    , offline=False  # Allow downloading if needed).to(device)
+        num_classes=2  # Binary classification
+    ).to(device)
     
     print(f"Created {model_type.upper()} model for binary classification (0 vs 1+ receipts)")
     
@@ -524,9 +523,8 @@ def train_level2_model(
     model = ModelFactory.create_transformer(
         model_type=model_type,
         pretrained=True,
-        num_classes=2,  # Binary classification
-        offline=False  # Allow downloading if needed
-    , offline=False  # Allow downloading if needed).to(device)
+        num_classes=2  # Binary classification
+    ).to(device)
     
     print(f"Created {model_type.upper()} model for binary classification (1 vs 2+ receipts)")
     
@@ -555,8 +553,6 @@ def train_level2_model(
     if model_type == "swin":
         # SwinV2 Transformer parameters - check for different attribute names
         if hasattr(model, 'swin'):
-        elif hasattr(model, \'swinv2\'):
-            backbone_params.extend(model.swinv2.parameters())
             backbone_params.extend(model.swin.parameters())
         elif hasattr(model, 'swinv2'):
             backbone_params.extend(model.swinv2.parameters())
@@ -806,8 +802,8 @@ def train_multiclass_model(
     model = ModelFactory.create_transformer(
         model_type=model_type,
         pretrained=True,
-        num_classes=4,  # 2, 3, 4, 5 receipts
-    , offline=False  # Allow downloading if needed).to(device)
+        num_classes=4  # 2, 3, 4, 5 receipts
+    ).to(device)
     
     print(f"Created {model_type.upper()} model for multiclass classification (2, 3, 4, 5 receipts)")
     

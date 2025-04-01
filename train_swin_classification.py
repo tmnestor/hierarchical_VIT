@@ -101,7 +101,7 @@ def train_model(
             model_type="swin", 
             pretrained=True,
             offline=offline  # Pass the offline parameter from function arguments
-        , offline=False  # Allow downloading if needed).to(device)
+        ).to(device)
         print("Initialized new Swin Transformer model using Hugging Face transformers")
 
     # Loss and optimizer with more robust learning rate control
