@@ -28,9 +28,11 @@ models/*.csv
 receipt_dataset/train/*
 receipt_dataset/val/*
 receipt_dataset/test/*
-receipt_dataset_swinv2/train/*
-receipt_dataset_swinv2/val/*
-receipt_dataset_swinv2/test/*
+
+# We want to include receipt_dataset_swinv2 and its contents in commits
+# receipt_dataset_swinv2/train/*
+# receipt_dataset_swinv2/val/*
+# receipt_dataset_swinv2/test/*
 
 # Ignore Python cache files
 __pycache__/
