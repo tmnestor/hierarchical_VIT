@@ -148,6 +148,134 @@ def train_hierarchical_model(
             augment=augment,
         )
     
+    # Evaluate the combined hierarchical model on validation data
+    print("\n" + "="*80)
+    print("EVALUATING COMPLETE HIERARCHICAL MODEL ON VALIDATION SET")
+    print("="*80)
+    
+    # Load trained models
+    level1_model = ModelFactory.load_transformer(
+        model_path=level1_dir / f"receipt_counter_{model_type}_best.pth",
+        model_type=model_type
+    ).to(get_device())
+    
+    level2_model = ModelFactory.load_transformer(
+        model_path=level2_dir / f"receipt_counter_{model_type}_best.pth",
+        model_type=model_type
+    ).to(get_device())
+    
+    # Load the multiclass model if needed
+    multiclass_model = None
+    if multiclass:
+        multiclass_model = ModelFactory.load_transformer(
+            model_path=multiclass_dir / f"receipt_counter_{model_type}_best.pth",
+            model_type=model_type
+        ).to(get_device())
+    
+    # Create a validation dataset with original labels
+    val_df = pd.read_csv(val_csv_path)
+    val_dataset = ReceiptDataset(
+        csv_file=val_csv_path,
+        img_dir=val_dir_path,
+        augment=False,
+        binary=False
+    )
+    
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True
+    )
+    
+    # Evaluate the full hierarchical model
+    device = get_device()
+    all_predictions = []
+    all_targets = []
+    
+    level1_model.eval()
+    level2_model.eval()
+    if multiclass_model:
+        multiclass_model.eval()
+    
+    with torch.no_grad():
+        for images, targets in tqdm(val_loader, desc="Evaluating hierarchical model"):
+            images = images.to(device)
+            batch_targets = targets.cpu().numpy()
+            
+            # Level 1: 0 vs 1+
+            outputs_level1 = level1_model(images)
+            if hasattr(outputs_level1, 'logits'):
+                outputs_level1 = outputs_level1.logits
+            preds_level1 = torch.argmax(outputs_level1, dim=1).cpu().numpy()
+            
+            # Initialize predictions with all zeros
+            batch_predictions = np.zeros_like(batch_targets)
+            
+            # For samples with 1+ receipts prediction
+            has_receipts_mask = (preds_level1 == 1)
+            if has_receipts_mask.sum() > 0:
+                # Level 2: 1 vs 2+
+                receipts_images = images[has_receipts_mask]
+                outputs_level2 = level2_model(receipts_images)
+                if hasattr(outputs_level2, 'logits'):
+                    outputs_level2 = outputs_level2.logits
+                preds_level2 = torch.argmax(outputs_level2, dim=1).cpu().numpy()
+                
+                # Set predictions for samples with 1 receipt
+                single_receipt_mask = np.where(has_receipts_mask)[0][preds_level2 == 0]
+                batch_predictions[single_receipt_mask] = 1
+                
+                # For samples with 2+ receipts prediction
+                if multiclass_model and (preds_level2 == 1).sum() > 0:
+                    # Get samples predicted to have 2+ receipts
+                    multiple_receipts_mask = has_receipts_mask.clone()
+                    multiple_receipt_indices = np.where(has_receipts_mask)[0]
+                    multiple_receipts_mask[multiple_receipt_indices[preds_level2 == 0]] = False
+                    
+                    multiple_receipt_images = images[multiple_receipts_mask]
+                    
+                    # Multiclass prediction
+                    outputs_multiclass = multiclass_model(multiple_receipt_images)
+                    if hasattr(outputs_multiclass, 'logits'):
+                        outputs_multiclass = outputs_multiclass.logits
+                    preds_multiclass = torch.argmax(outputs_multiclass, dim=1).cpu().numpy() + 2
+                    
+                    # Set final predictions for multiple receipt samples
+                    batch_predictions[multiple_receipts_mask.cpu().numpy()] = preds_multiclass
+                else:
+                    # Without multiclass model, just set to 2
+                    multiple_receipt_indices = np.where(has_receipts_mask)[0][preds_level2 == 1]
+                    batch_predictions[multiple_receipt_indices] = 2
+            
+            all_predictions.extend(batch_predictions)
+            all_targets.extend(batch_targets)
+    
+    # Calculate hierarchical metrics
+    accuracy = accuracy_score(all_targets, all_predictions)
+    balanced_accuracy = balanced_accuracy_score(all_targets, all_predictions)
+    f1_macro = f1_score(all_targets, all_predictions, average='macro')
+    
+    print(f"\nHierarchical Model Validation Metrics:")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Balanced Accuracy: {balanced_accuracy:.4f}")
+    print(f"F1 Macro: {f1_macro:.4f}")
+    
+    # Plot confusion matrix for hierarchical model
+    plot_confusion_matrix(
+        all_predictions,
+        all_targets,
+        output_path=output_path / f"{model_type}_hierarchical_confusion.png",
+    )
+    
+    # Save hierarchical metrics
+    pd.DataFrame({
+        'accuracy': [accuracy],
+        'balanced_accuracy': [balanced_accuracy],
+        'f1_macro': [f1_macro]
+    }).to_csv(output_path / f"{model_type}_hierarchical_metrics.csv", index=False)
+    
     print("\n" + "="*80)
     print("HIERARCHICAL TRAINING COMPLETE")
     print("="*80)
