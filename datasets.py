@@ -219,7 +219,8 @@ def create_data_loaders(
     augment_train=True, 
     binary=False,
     hierarchical_level=None,
-    train_val_split=0.8
+    train_val_split=0.8,
+    num_workers=None
 ):
     """
     Create data loaders for training and validation.
@@ -238,13 +239,23 @@ def create_data_loaders(
             - "level2": Binary classification (1 vs 2+ receipts)
             - "multiclass": Just classes 2-5
         train_val_split: Proportion of training data to use for training (if no val_csv provided)
+        num_workers: Number of worker processes for data loading (if None, uses config value)
+            - Set to 0 or 1 to avoid shared memory (shm) issues on systems with limited memory
         
     Returns:
         tuple: (train_loader, val_loader, num_train_samples, num_val_samples)
     """
     # Get configuration
     config = get_config()
-    num_workers = config.get_model_param("num_workers", 4)
+    # Use provided num_workers or get from config
+    if num_workers is None:
+        num_workers = config.get_model_param("num_workers", 4)
+    
+    # Print warning if using low number of workers to help avoid shared memory issues
+    if num_workers <= 1:
+        print(f"Using {num_workers} dataloader workers - this should help avoid shared memory (shm) issues")
+    else:
+        print(f"Using {num_workers} dataloader workers")
     
     # Ensure dataset directories exist
     if not os.path.exists(train_dir):

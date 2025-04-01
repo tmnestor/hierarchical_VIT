@@ -745,7 +745,7 @@ class Level2Dataset(Dataset):
 
 def train_level2_model(train_csv, train_dir, val_csv, val_dir, output_dir, model_type="swin", 
                        epochs=20, batch_size=16, learning_rate=2e-4, backbone_lr_multiplier=0.1,
-                       weight_decay=0.01, grad_clip=1.0, seed=42, deterministic=True):
+                       weight_decay=0.01, grad_clip=1.0, seed=42, deterministic=True, num_workers=1):
     """
     Train a Level 2 model with balanced sampling.
     
@@ -764,6 +764,7 @@ def train_level2_model(train_csv, train_dir, val_csv, val_dir, output_dir, model
         grad_clip: Gradient clipping max norm
         seed: Random seed for reproducibility
         deterministic: Whether to enable deterministic mode
+        num_workers: Number of dataloader workers (set to 0 or 1 to avoid shared memory issues)
         
     Returns:
         Path to the trained model
@@ -835,7 +836,7 @@ def train_level2_model(train_csv, train_dir, val_csv, val_dir, output_dir, model
         train_dataset,
         batch_size=batch_size,
         sampler=sampler,  # Use weighted sampler for balanced training
-        num_workers=4,
+        num_workers=num_workers,
         pin_memory=True
     )
     
@@ -843,9 +844,15 @@ def train_level2_model(train_csv, train_dir, val_csv, val_dir, output_dir, model
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=4,
+        num_workers=num_workers,
         pin_memory=True
     )
+    
+    # Print worker count info
+    if num_workers <= 1:
+        print(f"Using {num_workers} dataloader workers - this should help avoid shared memory (shm) issues")
+    else:
+        print(f"Using {num_workers} dataloader workers")
     
     # Create model
     print(f"Creating {model_type.upper()} model for binary classification...")
@@ -1132,6 +1139,10 @@ def parse_arguments():
         "--no-enhance", action="store_true",
         help="Disable image enhancement before processing"
     )
+    processing_group.add_argument(
+        "--workers", "-w", type=int, default=1,
+        help="Number of dataloader workers (default: 1 to avoid shared memory issues)"
+    )
     
     # Training options for Level 2 model
     training_group = parser.add_argument_group('Training (for train_level2 mode)')
@@ -1249,7 +1260,8 @@ def main():
             weight_decay=args.weight_decay,
             grad_clip=args.grad_clip,
             seed=args.seed,
-            deterministic=args.deterministic
+            deterministic=args.deterministic,
+            num_workers=args.workers
         )
         
         print(f"\nLevel 2 model training complete!")

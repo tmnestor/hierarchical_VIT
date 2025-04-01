@@ -1088,6 +1088,10 @@ def main():
         default="models/hierarchical",
         help="Directory to save trained models",
     )
+    training_group.add_argument(
+        "--workers", "-w", type=int,
+        help="Number of dataloader workers (default: from config, typically 4). Set to 0 or 1 to avoid shared memory issues."
+    )
     
     # Reproducibility options
     repro_group = parser.add_argument_group('Reproducibility')
@@ -1114,6 +1118,13 @@ def main():
         config.update_model_param("deterministic_mode", args.deterministic)
         mode_str = "enabled" if args.deterministic else "disabled"
         print(f"Deterministic mode {mode_str} by user")
+        
+    # Set number of workers if specified
+    if args.workers is not None:
+        config.update_model_param("num_workers", args.workers)
+        print(f"Using {args.workers} dataloader workers (custom value from command line)")
+        if args.workers <= 1:
+            print("Reduced worker count should help avoid shared memory (shm) issues")
     
     # Train hierarchical model
     train_hierarchical_model(

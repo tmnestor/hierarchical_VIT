@@ -79,7 +79,8 @@ def train_model(
         val_dir=Path(val_dir) if val_dir else None,
         batch_size=batch_size,
         augment_train=augment,
-        binary=binary
+        binary=binary,
+        num_workers=num_workers
     )
 
     # Set random seed for reproducibility
@@ -386,6 +387,10 @@ def main():
         "--offline", action="store_true",
         help="Run in offline mode - model must be pre-downloaded"
     )
+    training_group.add_argument(
+        "--workers", "-w", type=int,
+        help="Number of dataloader workers (default: from config, typically 4). Set to 0 or 1 to avoid shared memory issues."
+    )
     
     # Class distribution
     training_group.add_argument(
@@ -451,6 +456,13 @@ def main():
         config.update_model_param("gradient_clip_value", args.grad_clip)
         print(f"Using gradient clipping max norm: {args.grad_clip}")
         
+    # Set number of workers if specified
+    if args.workers is not None:
+        config.update_model_param("num_workers", args.workers)
+        print(f"Using {args.workers} dataloader workers (custom value from command line)")
+        if args.workers <= 1:
+            print("Reduced worker count should help avoid shared memory (shm) issues")
+        
     # Set reproducibility parameters if provided
     if args.seed is not None:
         config.update_model_param("random_seed", args.seed)
@@ -498,6 +510,7 @@ def main():
         print(f"Epochs: {args.epochs}")
         print(f"Batch size: {args.batch_size}")
         print(f"Learning rate - Classifier: {args.lr}, Backbone: {args.lr * args.backbone_lr_multiplier}")
+        print(f"DataLoader workers: {config.get_model_param('num_workers')}")
         print(f"Output directory: {args.output_dir}")
         print(f"Reproducibility: seed={config.get_model_param('random_seed')}, deterministic={config.get_model_param('deterministic_mode')}")
         print(f"Class distribution: {config.class_distribution}")
