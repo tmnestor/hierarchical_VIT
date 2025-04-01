@@ -26,6 +26,7 @@ from sklearn.metrics import (
     balanced_accuracy_score,
     f1_score,
     confusion_matrix,
+    classification_report,
 )
 
 from model_factory import ModelFactory
