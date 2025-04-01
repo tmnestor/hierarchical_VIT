@@ -1154,6 +1154,164 @@ class BayesianHierarchicalTrainer:
         plt.savefig(output_path)
         plt.close()
 
+    def evaluate_hierarchical_model(self, level1_model_path, level2_model_path):
+        """
+        Evaluate the complete hierarchical model on the validation set with simplified (0, 1, 2+) metrics.
+        
+        Args:
+            level1_model_path: Path to the trained Level 1 model
+            level2_model_path: Path to the trained Level 2 model
+            
+        Returns:
+            Dictionary with simplified metrics
+        """
+        print("\n" + "="*80)
+        print("EVALUATING COMPLETE HIERARCHICAL MODEL ON VALIDATION SET")
+        print("="*80)
+        
+        # Load trained models
+        level1_model = ModelFactory.load_model(
+            path=level1_model_path,
+            model_type=self.model_type,
+            num_classes=2  # Level 1 is binary classification (0 vs 1+)
+        ).to(self.device)
+        
+        level2_model = ModelFactory.load_model(
+            path=level2_model_path,
+            model_type=self.model_type,
+            num_classes=2  # Level 2 is binary classification (1 vs 2+)
+        ).to(self.device)
+        
+        # Set models to evaluation mode
+        level1_model.eval()
+        level2_model.eval()
+        
+        # Create a validation dataset with original labels
+        val_df = pd.read_csv(self.val_csv)
+        val_dataset = ReceiptDataset(
+            csv_file=self.val_csv,
+            img_dir=self.val_dir,
+            augment=False,
+            binary=False
+        )
+        
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=4,
+            pin_memory=True
+        )
+        
+        # Prepare for evaluation
+        all_predictions = []
+        all_targets = []
+        
+        # Run hierarchical prediction
+        with torch.no_grad():
+            for images, targets in tqdm(val_loader, desc="Evaluating hierarchical model"):
+                images = images.to(self.device)
+                batch_targets = targets.cpu().numpy()
+                
+                # Level 1: 0 vs 1+
+                outputs_level1 = level1_model(images)
+                if hasattr(outputs_level1, 'logits'):
+                    outputs_level1 = outputs_level1.logits
+                preds_level1 = torch.argmax(outputs_level1, dim=1).cpu().numpy()
+                
+                # Initialize predictions with all zeros
+                batch_predictions = np.zeros_like(batch_targets)
+                
+                # For samples with 1+ receipts prediction
+                has_receipts_mask = (preds_level1 == 1)
+                if has_receipts_mask.sum() > 0:
+                    # Level 2: 1 vs 2+
+                    receipts_images = images[has_receipts_mask]
+                    outputs_level2 = level2_model(receipts_images)
+                    if hasattr(outputs_level2, 'logits'):
+                        outputs_level2 = outputs_level2.logits
+                    preds_level2 = torch.argmax(outputs_level2, dim=1).cpu().numpy()
+                    
+                    # Set predictions for samples with 1 receipt
+                    single_receipt_mask = np.where(has_receipts_mask)[0][preds_level2 == 0]
+                    batch_predictions[single_receipt_mask] = 1
+                    
+                    # Set predictions for samples with 2+ receipts
+                    multiple_receipt_mask = np.where(has_receipts_mask)[0][preds_level2 == 1]
+                    batch_predictions[multiple_receipt_mask] = 2
+                
+                all_predictions.extend(batch_predictions)
+                all_targets.extend(batch_targets)
+        
+        # Convert multiclass predictions to simplified 0, 1, 2+ classification
+        simplified_targets = []
+        simplified_predictions = []
+        
+        for target, pred in zip(all_targets, all_predictions):
+            # Simplify targets (0, 1, 2+)
+            if target == 0:
+                simplified_targets.append(0)
+            elif target == 1:
+                simplified_targets.append(1)
+            else:  # 2+
+                simplified_targets.append(2)
+                
+            # Simplify predictions (already simplified by the hierarchical model)
+            simplified_predictions.append(int(pred))
+        
+        # Calculate metrics for 0, 1, 2+ classification
+        accuracy = accuracy_score(simplified_targets, simplified_predictions)
+        balanced_accuracy = balanced_accuracy_score(simplified_targets, simplified_predictions)
+        f1_macro = f1_score(simplified_targets, simplified_predictions, average='macro')
+        
+        # Get per-class metrics
+        class_names = ["0 receipts", "1 receipt", "2+ receipts"]
+        report = classification_report(
+            simplified_targets, 
+            simplified_predictions, 
+            target_names=class_names,
+            output_dict=True
+        )
+        
+        # Plot confusion matrix for simplified results
+        from training_utils import plot_confusion_matrix
+        plot_confusion_matrix(
+            simplified_predictions,
+            simplified_targets,
+            output_path=self.output_dir / f"{self.model_type}_hierarchical_confusion.png",
+            class_names=class_names
+        )
+        
+        # Save metrics to file
+        metrics_df = pd.DataFrame({
+            'accuracy': [accuracy],
+            'balanced_accuracy': [balanced_accuracy],
+            'f1_macro': [f1_macro],
+            'f1_class0': [report['0 receipts']['f1-score']],
+            'f1_class1': [report['1 receipt']['f1-score']],
+            'f1_class2plus': [report['2+ receipts']['f1-score']]
+        })
+        metrics_df.to_csv(self.output_dir / f"{self.model_type}_hierarchical_metrics.csv", index=False)
+        
+        # Print metrics
+        print(f"\nHierarchical Model Validation Metrics:")
+        print(f"Accuracy: {accuracy:.4f}")
+        print(f"Balanced Accuracy: {balanced_accuracy:.4f}")
+        print(f"F1 Macro: {f1_macro:.4f}")
+        
+        print("\nPer-class Performance:")
+        for cls in class_names:
+            print(f"{cls}: F1 = {report[cls]['f1-score']:.4f}, "
+                  f"Precision = {report[cls]['precision']:.4f}, "
+                  f"Recall = {report[cls]['recall']:.4f}")
+                
+        return {
+            'accuracy': accuracy,
+            'balanced_accuracy': balanced_accuracy,
+            'f1_macro': f1_macro,
+            'report': report
+        }
+    
     def train(self):
         """
         Train all models in the hierarchical structure and save metadata.
@@ -1176,6 +1334,16 @@ class BayesianHierarchicalTrainer:
         level2_model_path = self.train_level(
             "level2", level2_train_loader, level2_val_loader, level2_weights
         )
+        
+        # Evaluate the combined hierarchical model
+        hierarchical_metrics = self.evaluate_hierarchical_model(level1_model_path, level2_model_path)
+        
+        # Add hierarchical metrics to metadata
+        self.metadata['hierarchical'] = {
+            'accuracy': float(hierarchical_metrics['accuracy']),
+            'balanced_accuracy': float(hierarchical_metrics['balanced_accuracy']),
+            'f1_macro': float(hierarchical_metrics['f1_macro']),
+        }
 
         # Save metadata with class weights and frequencies for Bayesian inference
         metadata_path = self.output_dir / "training_metadata.json"
@@ -1189,6 +1357,7 @@ class BayesianHierarchicalTrainer:
             "level2_model": str(level2_model_path),
             "metadata": str(metadata_path),
             "training_info": self.metadata,
+            "hierarchical_metrics": hierarchical_metrics,
         }
 
 
@@ -1390,6 +1559,7 @@ def main():
     print(f"Level 1 model: {results['level1_model']}")
     print(f"Level 2 model: {results['level2_model']}")
     print(f"Training metadata: {results['metadata']}")
+    
     print("\nClass weights and frequencies:")
     print(f"Level 1 weights: {results['training_info']['level1']['class_weights']}")
     print(
@@ -1399,6 +1569,11 @@ def main():
     print(
         f"Level 2 frequencies: {results['training_info']['level2']['class_frequencies']}"
     )
+    
+    print("\nHierarchical model performance (0, 1, 2+):")
+    print(f"Accuracy: {results['hierarchical_metrics']['accuracy']:.4f}")
+    print(f"Balanced Accuracy: {results['hierarchical_metrics']['balanced_accuracy']:.4f}")
+    print(f"F1 Macro: {results['hierarchical_metrics']['f1_macro']:.4f}")
 
 
 if __name__ == "__main__":
