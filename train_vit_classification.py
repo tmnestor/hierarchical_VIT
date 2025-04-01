@@ -97,7 +97,7 @@ def train_model(
         model = ModelFactory.load_model(checkpoint_path, model_type="vit").to(device)
         print("Resumed ViT-Base model from checkpoint")
     else:
-        model = ModelFactory.create_transformer(model_type="vit", pretrained=True).to(device)
+        model = ModelFactory.create_transformer(model_type="vit", pretrained=True, offline=False  # Allow downloading if needed).to(device)
         print("Initialized new ViT-Base model using Hugging Face transformers")
 
     # Loss and optimizer with more robust learning rate control
@@ -142,7 +142,7 @@ def train_model(
         mode='max',           # Monitor balanced accuracy which we want to maximize
         factor=lr_scheduler_factor,  # Multiply LR by this factor on plateau
         patience=lr_scheduler_patience,  # Number of epochs with no improvement before reducing LR
-        verbose=True,        # Print message when LR is reduced
+        verbose=False  # Set to False to avoid deprecation warnings,        # Print message when LR is reduced
         min_lr=min_lr        # Don't reduce LR below this value
     )
 
@@ -227,7 +227,7 @@ def train_model(
             output_dir=output_dir,
             metrics=["balanced_accuracy", "f1_macro"],
             mode="max",
-            verbose=True
+            verbose=False  # Set to False to avoid deprecation warnings
         )
         
         # Check if any metric has improved and save the model if needed
@@ -239,7 +239,7 @@ def train_model(
         
         # Use the EarlyStopping utility to decide whether to stop training
         # Monitor F1 macro instead of balanced accuracy
-        early_stopping = EarlyStopping(patience=patience, mode="max", verbose=True)
+        early_stopping = EarlyStopping(patience=patience, mode="max", verbose=False  # Set to False to avoid deprecation warnings)
         if early_stopping.check_improvement(val_f1_macro):
             print(f"Early stopping triggered after {epoch + 1} epochs")
             break

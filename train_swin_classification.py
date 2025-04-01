@@ -36,9 +36,10 @@ def train_model(
     binary=False,
     augment=True,
     resume_checkpoint=None,
+    offline=False,
 ):
     """
-    Train the Swin Transformer model for receipt counting as a classification task.
+    Train the SwinV2 Transformer model for receipt counting as a classification task.
     
     Args:
         train_csv: Path to training CSV file
@@ -52,6 +53,7 @@ def train_model(
         binary: If True, use binary classification (0 vs 1+ receipts)
         augment: If True, apply data augmentation during training
         resume_checkpoint: Path to checkpoint to resume training from (optional)
+        offline: If True, run in offline mode without downloading models
     """
     # Create output directory
     output_path = Path(output_dir)
@@ -95,7 +97,11 @@ def train_model(
         model = ModelFactory.load_model(checkpoint_path, model_type="swin").to(device)
         print("Resumed Swin Transformer model from checkpoint")
     else:
-        model = ModelFactory.create_transformer(model_type="swin", pretrained=True).to(device)
+        model = ModelFactory.create_transformer(
+            model_type="swin", 
+            pretrained=True,
+            offline=offline  # Pass the offline parameter from function arguments
+        , offline=False  # Allow downloading if needed).to(device)
         print("Initialized new Swin Transformer model using Hugging Face transformers")
 
     # Loss and optimizer with more robust learning rate control
@@ -140,7 +146,7 @@ def train_model(
         mode='max',           # Monitor balanced accuracy which we want to maximize
         factor=lr_scheduler_factor,  # Multiply LR by this factor on plateau
         patience=lr_scheduler_patience,  # Number of epochs with no improvement before reducing LR
-        verbose=True,        # Print message when LR is reduced
+        # Remove verbose=False  # Set to False to avoid deprecation warnings parameter to avoid deprecation warning
         min_lr=min_lr        # Don't reduce LR below this value
     )
 
@@ -217,15 +223,24 @@ def train_model(
             f"F1 Macro: {val_f1_macro:.2%}"
         )
         
-        # Update learning rate scheduler based on balanced accuracy
+        # Update learning rate scheduler based on F1 macro score
         scheduler.step(val_f1_macro)
+        
+        # Manually print LR change messages (since we removed verbose parameter)
+        for i, param_group in enumerate(optimizer.param_groups):
+            if i == 0:
+                component = "backbone"
+            else:
+                component = "classifier"
+            current_lr = param_group['lr']
+            print(f"Current learning rate for {component}: {current_lr:.2e}")
 
         # Use the ModelCheckpoint utility to save models based on metrics
         checkpoint = ModelCheckpoint(
             output_dir=output_dir,
             metrics=["balanced_accuracy", "f1_macro"],
             mode="max",
-            verbose=True
+            verbose=False  # Set to False to avoid lr_scheduler verbose deprecation
         )
         
         # Check if any metric has improved and save the model if needed
@@ -235,10 +250,20 @@ def train_model(
             model_type="swin"
         )
         
+        # Manually print checkpoint status
+        if improved:
+            print(f"Model checkpoint saved - found improvement in metrics")
+        
         # Use the EarlyStopping utility to decide whether to stop training
-        # Monitor F1 macro instead of balanced accuracy
-        early_stopping = EarlyStopping(patience=patience, mode="max", verbose=True)
-        if early_stopping.check_improvement(val_f1_macro):
+        # Monitor F1 macro instead of balanced accuracy (verbose=False to avoid deprecation warnings)
+        early_stopping = EarlyStopping(patience=patience, mode="max", verbose=False)
+        stop_training = early_stopping.check_improvement(val_f1_macro)
+        
+        # Manually print early stopping status instead of relying on verbose parameter
+        if early_stopping.counter > 0:
+            print(f"EarlyStopping: No improvement for {early_stopping.counter}/{patience} epochs")
+            
+        if stop_training:
             print(f"Early stopping triggered after {epoch + 1} epochs")
             break
 
@@ -276,7 +301,7 @@ def train_model(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Train a Swin-Tiny model for receipt counting as classification"
+        description="Train a SwinV2-Tiny model for receipt counting as classification"
     )
     
     # Data input options
@@ -356,6 +381,10 @@ def main():
     training_group.add_argument(
         "--dry-run", action="store_true",
         help="Validate configuration without actual training"
+    )
+    training_group.add_argument(
+        "--offline", action="store_true",
+        help="Run in offline mode - model must be pre-downloaded"
     )
     
     # Class distribution
@@ -461,7 +490,7 @@ def main():
     # If dry run, just print configuration and exit
     if args.dry_run:
         print("\n=== DRY RUN - CONFIGURATION VALIDATION ===")
-        print(f"Model type: Swin-Tiny")
+        print(f"Model type: SwinV2-Tiny")
         print(f"Training data: {args.train_csv} ({args.train_dir})")
         print(f"Validation data: {val_csv} ({val_dir})")
         print(f"Binary mode: {args.binary}")
@@ -479,6 +508,9 @@ def main():
         print("=== CONFIGURATION VALID ===\n")
         return
 
+    # Update model creation to be aware of offline mode
+    print(f"Running in {'offline' if args.offline else 'online'} mode")
+    
     train_model(
         args.train_csv,
         args.train_dir,
@@ -491,6 +523,7 @@ def main():
         binary=args.binary,
         augment=(not args.no_augment),  # Pass augmentation flag to train_model
         resume_checkpoint=resume_checkpoint if args.resume else None,
+        offline=args.offline,
     )
 
 

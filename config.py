@@ -19,9 +19,9 @@ DEFAULT_BINARY_DISTRIBUTION = [0.6, 0.4]
 # Default model architecture parameters
 DEFAULT_MODEL_PARAMS = {
     # Image parameters
-    "image_size": 224,
-    "normalization_mean": [0.485, 0.456, 0.406],  # ImageNet mean
-    "normalization_std": [0.229, 0.224, 0.225],  # ImageNet std
+    "image_size": 256,  # SwinV2 uses 256x256 images
+    "normalization_mean": [0.5, 0.5, 0.5],  # SwinV2 mean
+    "normalization_std": [0.5, 0.5, 0.5],  # SwinV2 std
     # Classifier architecture
     "classifier_dims": [768, 512, 256],  # Hidden layer dimensions
     "dropout_rates": [0.4, 0.4, 0.3],  # Dropout rates for each layer

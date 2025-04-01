@@ -22,11 +22,11 @@ class ModelFactory:
     # Model type to HuggingFace model path mapping
     MODEL_PATHS = {
         "vit": "google/vit-base-patch16-224",
-        "swin": "microsoft/swin-tiny-patch4-window7-224"
+        "swin": "microsoft/swinv2-tiny-patch4-window8-256"
     }
     
     @classmethod
-    def create_transformer(cls, model_type="vit", pretrained=True, num_classes=None, verbose=True, mode="train"):
+    def create_transformer(cls, model_type="vit", pretrained=True, num_classes=None, verbose=True, mode="train", offline=False):
         """Create a transformer model for receipt counting.
         
         Args:
@@ -39,27 +39,26 @@ class ModelFactory:
         Returns:
             Configured transformer model
         """
-        # Workaround for OpenCV dependency in transformers
-        # This prevents the image_utils module from importing OpenCV
+        # Import transformers with environment variable to disable CV2
+        import os
         import sys
-        import types
         
-        # Create a dummy cv2 module to avoid the actual import
-        cv2_mock = types.ModuleType('cv2')
-        sys.modules['cv2'] = cv2_mock
+        # Configure environment based on online/offline mode
+        if offline:
+            # Prevent any online access attempts
+            os.environ["TRANSFORMERS_OFFLINE"] = "1"
+            print("Running in offline mode - model must be pre-downloaded")
+        else:
+            # Allow downloads if the model isn't available locally
+            os.environ.pop("TRANSFORMERS_OFFLINE", None)  # Remove if set
+            print("Running in online mode - will download model if needed")
         
-        # Add necessary functions/attributes to the mock module
-        # This makes it possible for basic operations to work
-        def imread(*args, **kwargs):
-            return None
-        def resize(*args, **kwargs):
-            return None
-        cv2_mock.imread = imread
-        cv2_mock.resize = resize
-        cv2_mock.IMREAD_COLOR = 1
-        cv2_mock.INTER_LINEAR = 1
+        # Set environment variables to prefer PIL over OpenCV
+        os.environ["OPENCV_NOT_AVAILABLE"] = "1"
+        os.environ["VISION_PIPELINE_BACKEND"] = "PIL"
         
         import transformers
+        from transformers import logging as transformers_logging
         
         # Validate model type
         model_type = model_type.lower()
@@ -77,18 +76,13 @@ class ModelFactory:
         # Temporarily disable HuggingFace warnings if not verbose
         if not verbose:
             # Save previous verbosity level
-            prev_verbosity = transformers.logging.get_verbosity()
-            transformers.logging.set_verbosity_error()
+            prev_verbosity = transformers_logging.get_verbosity()
+            transformers_logging.set_verbosity_error()
         
         # Get our custom configuration parameters
         project_config = get_config()
         classifier_dims = project_config.get_model_param("classifier_dims", [768, 512, 256])
         dropout_rates = project_config.get_model_param("dropout_rates", [0.4, 0.4, 0.3])
-        
-        # Patch any existing transformers modules that use cv2
-        for module_name in list(sys.modules.keys()):
-            if module_name.startswith('transformers.') and hasattr(sys.modules[module_name], 'cv2'):
-                sys.modules[module_name].cv2 = cv2_mock
         
         # Create appropriate model type
         try:
@@ -105,24 +99,47 @@ class ModelFactory:
                     config = ViTConfig(num_labels=num_classes)
                     model = ViTForImageClassification(config)
             elif model_type == "swin":
-                # Import just the needed classes without triggering the OpenCV import
-                from transformers.models.swin.configuration_swin import SwinConfig
-                from transformers.models.swin.modeling_swin import SwinForImageClassification
+                # Import model without the image processing components that require OpenCV
+                from transformers import AutoConfig, AutoModelForImageClassification
                 
                 if pretrained:
-                    model = SwinForImageClassification.from_pretrained(
-                        cls.MODEL_PATHS["swin"], 
-                        num_labels=num_classes,
-                        ignore_mismatched_sizes=True
-                    )
+                    # Use AutoModelForImageClassification which handles model differences internally
+                    try:
+                        model = AutoModelForImageClassification.from_pretrained(
+                            cls.MODEL_PATHS["swin"], 
+                            num_labels=num_classes,
+                            ignore_mismatched_sizes=True,
+                            local_files_only=offline
+                        )
+                    except Exception as e:
+                        if offline:
+                            raise ValueError(
+                                f"Failed to load model in offline mode. Please download the model first: {e}"
+                            )
+                        else:
+                            # Re-raise the exception for online mode
+                            raise
                 else:
                     # Create from config only, no pretrained weights
-                    config = SwinConfig(num_labels=num_classes)
-                    model = SwinForImageClassification(config)
+                    try:
+                        config = AutoConfig.from_pretrained(
+                            cls.MODEL_PATHS["swin"], 
+                            num_labels=num_classes,
+                            local_files_only=offline
+                        )
+                        model = AutoModelForImageClassification.from_config(config)
+                    except Exception as e:
+                        if offline:
+                            raise ValueError(
+                                f"Failed to load model config in offline mode. Please download the model first: {e}"
+                            )
+                        else:
+                            # Re-raise the exception for online mode
+                            raise
         finally:
             # Restore previous verbosity if changed
             if not verbose:
-                transformers.logging.set_verbosity(prev_verbosity)
+                transformers_logging.set_verbosity(prev_verbosity)
         
         # Create unified classifier architecture
         cls._build_classifier(model, classifier_dims, dropout_rates, num_classes)

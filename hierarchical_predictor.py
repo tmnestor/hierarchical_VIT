@@ -99,7 +99,8 @@ class HierarchicalPredictor:
             compatible_level1_path, 
             model_type=model_type,
             num_classes=2,
-            mode="eval"
+            mode="eval",
+            offline=False  # Allow downloading if needed
         ).to(self.device)
         self.level1_model.eval()
         
@@ -119,7 +120,8 @@ class HierarchicalPredictor:
                     compatible_level2_path, 
                     model_type=model_type,
                     num_classes=2,
-                    mode="eval"
+                    mode="eval",
+                    offline=False  # Allow downloading if needed
                 ).to(self.device)
                 self.level2_model.eval()
                 
@@ -146,7 +148,8 @@ class HierarchicalPredictor:
                     compatible_multiclass_path, 
                     model_type=model_type,
                     num_classes=4,  # 2, 3, 4, 5 receipts
-                    mode="eval"
+                    mode="eval",
+                    offline=False  # Allow downloading if needed
                 ).to(self.device)
                 self.multiclass_model.eval()
                 print("Using full hierarchical model with multiclass classifier")
@@ -852,7 +855,8 @@ def train_level2_model(train_csv, train_dir, val_csv, val_dir, output_dir, model
     model = ModelFactory.create_transformer(
         model_type=model_type,
         num_classes=2,  # Binary classification
-        pretrained=True
+        pretrained=True,
+        offline=False  # Allow downloading if needed
     )
     model = model.to(device)
     
@@ -866,9 +870,13 @@ def train_level2_model(train_csv, train_dir, val_csv, val_dir, output_dir, model
     
     # Different parameter groups based on model type
     if model_type == "swin":
-        # Swin Transformer parameters
+        # SwinV2 Transformer parameters - check for different attribute names
         if hasattr(model, 'swin'):
+        elif hasattr(model, \'swinv2\'):
+            backbone_params.extend(model.swinv2.parameters())
             backbone_params.extend(model.swin.parameters())
+        elif hasattr(model, 'swinv2'):
+            backbone_params.extend(model.swinv2.parameters())
         elif hasattr(model, 'model'):
             backbone_params.extend(model.model.parameters())
         

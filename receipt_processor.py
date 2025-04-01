@@ -10,16 +10,18 @@ class ReceiptProcessor:
         config = get_config()
         
         # Use config value or override with provided value
-        self.img_size = img_size or config.get_model_param("image_size", 224)
+        self.img_size = img_size or config.get_model_param("image_size", 256)
         
-        # Get normalization parameters from config
-        mean = config.get_model_param("normalization_mean", [0.485, 0.456, 0.406])
-        std = config.get_model_param("normalization_std", [0.229, 0.224, 0.225])
+        # Get normalization parameters for SwinV2 (different from ImageNet defaults)
+        # These values are the default for SwinV2 according to the model card
+        mean = config.get_model_param("normalization_mean", [0.5, 0.5, 0.5])
+        std = config.get_model_param("normalization_std", [0.5, 0.5, 0.5])
         
         if augment:
             # Basic transform with limited augmentations using torchvision
+            # For SwinV2, we ensure images are resized to 256x256 and use center cropping
             self.transform = transforms.Compose([
-                transforms.Resize((self.img_size, self.img_size)),
+                transforms.Resize((self.img_size, self.img_size), interpolation=transforms.InterpolationMode.BICUBIC),
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomRotation(15),
                 transforms.ColorJitter(brightness=0.2, contrast=0.2),
@@ -28,8 +30,9 @@ class ReceiptProcessor:
             ])
         else:
             # Standard transform for evaluation
+            # For SwinV2, we use the same preprocessing as used during model training
             self.transform = transforms.Compose([
-                transforms.Resize((self.img_size, self.img_size)),
+                transforms.Resize((self.img_size, self.img_size), interpolation=transforms.InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=mean, std=std),
             ])

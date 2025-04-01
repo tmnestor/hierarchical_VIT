@@ -201,7 +201,8 @@ def train_level1_model(
         model_type=model_type,
         pretrained=True,
         num_classes=2,  # Binary classification
-    ).to(device)
+        offline=False  # Allow downloading if needed
+    , offline=False  # Allow downloading if needed).to(device)
     
     print(f"Created {model_type.upper()} model for binary classification (0 vs 1+ receipts)")
     
@@ -229,7 +230,7 @@ def train_level1_model(
         mode='max',
         factor=0.5,
         patience=3,
-        verbose=True,
+        verbose=False  # Set to False to avoid deprecation warnings,
         min_lr=1e-6
     )
     
@@ -244,14 +245,14 @@ def train_level1_model(
         output_dir=output_dir,
         metrics=["balanced_accuracy", "f1_macro"],
         mode="max",
-        verbose=True
+        verbose=False  # Set to False to avoid deprecation warnings
     )
     
     # Create early stopping manager
     early_stopping = EarlyStopping(
         patience=patience,
         mode="max",
-        verbose=True
+        verbose=False  # Set to False to avoid deprecation warnings
     )
     
     # Training loop
@@ -524,7 +525,8 @@ def train_level2_model(
         model_type=model_type,
         pretrained=True,
         num_classes=2,  # Binary classification
-    ).to(device)
+        offline=False  # Allow downloading if needed
+    , offline=False  # Allow downloading if needed).to(device)
     
     print(f"Created {model_type.upper()} model for binary classification (1 vs 2+ receipts)")
     
@@ -551,9 +553,13 @@ def train_level2_model(
     
     # Different parameter groups based on model type
     if model_type == "swin":
-        # Swin Transformer parameters
+        # SwinV2 Transformer parameters - check for different attribute names
         if hasattr(model, 'swin'):
+        elif hasattr(model, \'swinv2\'):
+            backbone_params.extend(model.swinv2.parameters())
             backbone_params.extend(model.swin.parameters())
+        elif hasattr(model, 'swinv2'):
+            backbone_params.extend(model.swinv2.parameters())
         elif hasattr(model, 'model'):
             backbone_params.extend(model.model.parameters())
         
@@ -587,7 +593,7 @@ def train_level2_model(
         mode='max',
         factor=0.5,
         patience=3,
-        verbose=True,
+        verbose=False  # Set to False to avoid deprecation warnings,
         min_lr=1e-6
     )
     
@@ -602,14 +608,14 @@ def train_level2_model(
         output_dir=output_dir,
         metrics=["balanced_accuracy", "f1_macro"],
         mode="max",
-        verbose=True
+        verbose=False  # Set to False to avoid deprecation warnings
     )
     
     # Create early stopping manager
     early_stopping = EarlyStopping(
         patience=patience,
         mode="max",
-        verbose=True
+        verbose=False  # Set to False to avoid deprecation warnings
     )
     
     # Get gradient clipping value from config
@@ -801,7 +807,7 @@ def train_multiclass_model(
         model_type=model_type,
         pretrained=True,
         num_classes=4,  # 2, 3, 4, 5 receipts
-    ).to(device)
+    , offline=False  # Allow downloading if needed).to(device)
     
     print(f"Created {model_type.upper()} model for multiclass classification (2, 3, 4, 5 receipts)")
     
@@ -828,7 +834,7 @@ def train_multiclass_model(
         mode='max',
         factor=0.5,
         patience=3,
-        verbose=True,
+        verbose=False  # Set to False to avoid deprecation warnings,
         min_lr=1e-6
     )
     
@@ -843,14 +849,14 @@ def train_multiclass_model(
         output_dir=output_dir,
         metrics=["balanced_accuracy", "f1_macro"],
         mode="max",
-        verbose=True
+        verbose=False  # Set to False to avoid deprecation warnings
     )
     
     # Create early stopping manager
     early_stopping = EarlyStopping(
         patience=patience,
         mode="max",
-        verbose=True
+        verbose=False  # Set to False to avoid deprecation warnings
     )
     
     # Training loop

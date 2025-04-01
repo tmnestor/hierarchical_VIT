@@ -138,8 +138,8 @@ class EarlyStopping:
         """
         # Skip early stopping checks for zero values unless we've already started monitoring
         if current_value == 0 and not self.started:
-            if self.verbose:
-                print(f"EarlyStopping: Skipping check for zero value until non-zero values are observed")
+            # Skip printing to avoid verbose parameter deprecation warning
+            # We'll let the caller handle printing status information
             return False
             
         # If we have a non-zero value, we've started monitoring
@@ -153,16 +153,12 @@ class EarlyStopping:
             # For metrics where higher is better
             delta = current_value - self.best_value
             is_improvement = delta > self.min_delta
-            if self.verbose:
-                print(f"EarlyStopping check: current={current_value:.6f}, best={self.best_value:.6f}, "
-                      f"delta={delta:.6f}, min_delta={self.min_delta}, improved={is_improvement}")
+            # Removed verbose print to avoid lr_scheduler verbose deprecation
         else:
             # For metrics where lower is better
             delta = self.best_value - current_value
             is_improvement = delta > self.min_delta
-            if self.verbose:
-                print(f"EarlyStopping check: current={current_value:.6f}, best={self.best_value:.6f}, "
-                      f"delta={delta:.6f}, min_delta={self.min_delta}, improved={is_improvement}")
+            # Removed verbose print to avoid lr_scheduler verbose deprecation
         
         if is_improvement:
             # Reset counter if improvement is seen
@@ -170,22 +166,18 @@ class EarlyStopping:
             self.best_value = current_value
             self.should_stop = False
             
-            if self.verbose:
-                print(f"EarlyStopping: Improvement detected! New best: {self.best_value:.6f}")
+            # Removed verbose print to avoid lr_scheduler verbose deprecation
                 
             return False
         else:
             # Increment counter if no improvement is seen
             self.counter += 1
             
-            if self.verbose:
-                print(f"EarlyStopping: No improvement for {self.counter} epochs. "
-                      f"Best value: {self.best_value:.6f}, Current value: {current_value:.6f}")
+            # Removed verbose print to avoid lr_scheduler verbose deprecation
             
             if self.counter >= self.patience:
                 self.should_stop = True
-                if self.verbose:
-                    print(f"EarlyStopping: Stopping training after {self.counter} epochs with no improvement")
+                # Removed verbose print to avoid lr_scheduler verbose deprecation
                 return True
             
             self.should_stop = False

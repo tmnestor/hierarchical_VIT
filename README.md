@@ -60,10 +60,10 @@ Our enhanced Bayesian correction implements this by:
 
 ```bash
 python train_bayesian_hierarchical.py \
-    --train_csv receipts/train.csv \
-    --train_dir receipts/train \
-    --val_csv receipts/val.csv \
-    --val_dir receipts/val \
+    --train_csv receipt_dataset_swinv2/train.csv \
+    --train_dir receipt_dataset_swinv2/train \
+    --val_csv receipt_dataset_swinv2/val.csv \
+    --val_dir receipt_dataset_swinv2/val \
     --model_type swin \
     --output_dir models/bayesian_hierarchical \
     --epochs 30 \
@@ -88,8 +88,8 @@ python bayesian_temperature_calibration.py \
     --mode evaluate \
     --model_base_path models/bayesian_hierarchical \
     --model_type swin \
-    --test_csv receipts/val.csv \
-    --test_dir receipts/val \
+    --test_csv receipt_dataset_swinv2/val.csv \
+    --test_dir receipt_dataset_swinv2/val \
     --use-cpu
 ```
 
@@ -117,8 +117,8 @@ python bayesian_temperature_calibration.py \
     --sweep \
     --model_base_path models/bayesian_hierarchical \
     --model_type swin \
-    --test_csv receipts/test.csv \
-    --test_dir receipts/test \
+    --test_csv receipt_dataset_swinv2/test.csv \
+    --test_dir receipt_dataset_swinv2/test \
     --output_dir evaluation/sweep \
     --min_temp 0.001 \
     --max_temp 0.1 \
@@ -146,8 +146,8 @@ python test_bayesian_calibration.py --model_type swin --use-cpu
 # Complete evaluation with F1 score optimization
 python test_bayesian_calibration.py \
     --model_type swin \
-    --test_csv receipts/test.csv \
-    --test_dir receipts/test \
+    --test_csv receipt_dataset_swinv2/test.csv \
+    --test_dir receipt_dataset_swinv2/test \
     --sweep \
     --min_temp 0.001 \
     --max_temp 0.1 \
@@ -156,13 +156,13 @@ python test_bayesian_calibration.py \
     --use-cpu
 
 
-  python test_bayesian_calibration.py \
-      --model_type swin \
-      --test_csv receipts/test.csv \
-      --test_dir receipts/test \
-      --output_dir evaluation/calibrated_hierarchical \
-      --mode bayesian_sweep \
-      --bayesian_temps 0.001
+python test_bayesian_calibration.py \
+    --model_type swin \
+    --test_csv receipt_dataset_swinv2/test.csv \
+    --test_dir receipt_dataset_swinv2/test \
+    --output_dir evaluation/calibrated_hierarchical \
+    --mode bayesian_sweep \
+    --bayesian_temps 0.001
 ```
 
 
@@ -173,7 +173,7 @@ python bayesian_temperature_calibration.py \
       --mode predict \
       --model_base_path models/bayesian_hierarchical \
       --model_type swin \
-      --image rectangle_dataset/test/rectangle_0003_3.jpg \
+      --image receipt_dataset_swinv2/test/rectangle_0003_3.jpg \
       --bayesian_temperature 0.05 \
       --debug
 
@@ -182,8 +182,8 @@ python bayesian_temperature_calibration.py \
 ### Analyse Model Errors
 
 ```bash
-python analyze_model_errors.py --test_csv receipts/test.csv \
-                                --test_dir receipts/test \
+python analyze_model_errors.py --test_csv receipt_dataset_swinv2/test.csv \
+                                --test_dir receipt_dataset_swinv2/test \
                                 --model_base_path models/bayesian_hierarchical \
                                 --model_type swin \
                                 --output_dir error_analysis \
@@ -450,3 +450,14 @@ python train_bayesian_hierarchical.py \
     --backbone_lr_multiplier 0.1 \
     --look_at_misclassifications \
     --use_focal_loss --focal_gamma 2.0
+
+### SWIN2
+
+python train_swin_classification.py --offline \
+  --train_csv receipt_dataset_swinv2/train.csv \
+  --train_dir receipt_dataset_swinv2/train \
+  --val_csv receipt_dataset_swinv2/val.csv \
+  --val_dir receipt_dataset_swinv2/val \
+  --output_dir models/swinv2 \
+  --epochs 20 \
+  --batch_size 16

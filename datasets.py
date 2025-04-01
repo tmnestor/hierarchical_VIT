@@ -38,7 +38,7 @@ class ReceiptDataset(Dataset):
         
         # Get configuration parameters
         config = get_config()
-        self.image_size = config.get_model_param("image_size", 224)
+        self.image_size = config.get_model_param("image_size", 256)
         
         # Get normalization parameters from config
         self.mean = np.array(config.get_model_param("normalization_mean", [0.485, 0.456, 0.406]))
@@ -102,7 +102,8 @@ class ReceiptDataset(Dataset):
             image_tensor = self.transform(image)
         else:
             # Manual resize and normalization if no transform provided
-            image = image.resize((self.image_size, self.image_size), Image.BILINEAR)
+            # For SwinV2, use BICUBIC interpolation for better quality
+            image = image.resize((self.image_size, self.image_size), Image.BICUBIC)
             image_np = np.array(image, dtype=np.float32) / 255.0
             image_np = (image_np - self.mean) / self.std
             image_tensor = torch.tensor(image_np).permute(2, 0, 1)

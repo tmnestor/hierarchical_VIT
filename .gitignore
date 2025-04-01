@@ -8,25 +8,32 @@
 !.gitignore
 !.gitkeep
 
-# Don't ignore source files, text files and markdown files
+# Don't ignore source files, text files, markdown files, and image files
 !*.py
 !*.md
 !*.txt
+!*.jpg
+!*.jpeg
+!*.png
 
 # Include test_images directory and its contents
 !test_images/
-!test_images/*.jpg
 
 # Exclude model files (keep directory structure with .gitkeep)
 models/*.pth
-models/*.png
 models/*.csv
 
-# Exclude large data files but keep directory structure
-test_images/*.jpg
-receipt_dataset/train/*.jpg
+# Specific exclusions for large data directories that should not be committed
+# despite the general inclusion of image files
+receipt_dataset/train/*
+receipt_dataset/val/*
+receipt_dataset/test/*
+receipt_dataset_swinv2/train/*
+receipt_dataset_swinv2/val/*
+receipt_dataset_swinv2/test/*
 
 # Ignore Python cache files
 __pycache__/
 *.py[cod]
 *$py.class
+swinv2_update_helper.py
