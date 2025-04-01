@@ -239,13 +239,13 @@ python train_vit_classification.py -tc receipt_dataset/train.csv -td receipt_dat
 python train_swin_classification.py -tc receipt_dataset_swinv2/train.csv -td receipt_dataset_swinv2/train \
                            -vc receipt_dataset_swinv2/val.csv -vd receipt_dataset_swinv2/val \
                            -e 20 -b 16 -o models/swinv2 -s 42 -d \
-                           -l 5e-5
+                           -l 5e-5 --workers 1  # Use --workers 1 to avoid shared memory issues
 
 # Train hierarchical model with all components
 python train_hierarchical_model.py -tc receipt_dataset_swinv2/train.csv -td receipt_dataset_swinv2/train \
                                   -vc receipt_dataset_swinv2/val.csv -vd receipt_dataset_swinv2/val \
                                   -m swin -o models/hierarchical_swin \
-                                  --use_multiclass -e 25 -b 16 -s 42 -d
+                                  --use_multiclass -e 25 -b 16 -s 42 -d -w 1  # -w 1 avoids shared memory issues
 
 # Train Bayesian-aware hierarchical model
 python train_bayesian_hierarchical.py \
@@ -255,7 +255,8 @@ python train_bayesian_hierarchical.py \
     --val_dir receipt_dataset_swinv2/val \
     --model_type swin \
     --output_dir models/bayesian_hierarchical \
-    --use_focal_loss --focal_gamma 2.0
+    --use_focal_loss --focal_gamma 2.0 \
+    --workers 1  # Avoid shared memory (shm) issues
 ```
 
 ### Evaluation and Inference
@@ -331,9 +332,11 @@ python analyze_model_errors.py --test_csv receipt_dataset_swinv2/test.csv \
 
 5. **Apple Silicon users**: Add the `--use-cpu` flag when using Macs with M1/M2 chips to avoid device mismatch errors.
 
-6. **For production**: Use the identified optimal temperature from F1-optimized sweep results.
+6. **Limited memory environments**: Add `--workers 1` or `-w 1` flag to avoid "Bus error" crashes due to insufficient shared memory (shm).
 
-7. **For model updates**: When changing model architectures (e.g., Swin to SwinV2), recalibrate and find new optimal temperatures.
+7. **For production**: Use the identified optimal temperature from F1-optimized sweep results.
+
+8. **For model updates**: When changing model architectures (e.g., Swin to SwinV2), recalibrate and find new optimal temperatures.
 
 ## 📚 Core Modules
 
