@@ -17,6 +17,9 @@
 !*.png
 !*.csv
 
+# Re-ignore specific files
+CLAUDE.md
+
 # Include test_images directory and its contents
 !test_images/
 
