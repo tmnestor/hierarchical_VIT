@@ -32,7 +32,7 @@ This hierarchical structure delivers several advantages:
 
 ## 🔄 Recent Updates
 
-### July 2025 Update: Lottery Ticket Hypothesis Pruning
+### April 2025 Update: Lottery Ticket Hypothesis Pruning
 
 - **✂️ Model Pruning Support**: Implemented Lottery Ticket Hypothesis pruning for model compression
 - **🎯 Winning Tickets**: Ability to find sparse subnetworks that perform as well or better than dense models
@@ -41,7 +41,7 @@ This hierarchical structure delivers several advantages:
 - **🚀 Hierarchical Pruning**: Support for pruning individual levels in hierarchical models
 - **📋 Pruning Utilities**: New prune_utils.py module for reusable pruning operations
 
-### June 2025 Update: SwinV2 Migration
+### March 2025 Update: SwinV2 Migration
 
 - **✨ New Model Architecture**: Upgraded from Swin to SwinV2 (microsoft/swinv2-tiny-patch4-window8-256)
 - **🖼️ Resolution Boost**: Increased image resolution from 224×224 to 256×256
@@ -51,7 +51,7 @@ This hierarchical structure delivers several advantages:
 - **📥 Model Download Utility**: Added swinv2_model_download.py for pre-fetching models
 - **🔧 Code Update Helper**: Added swinv2_update_helper.py for automating codebase updates
 
-### May 2025 Update: Bayesian Calibration
+### Feb 2025 Update: Bayesian Calibration
 
 - **🤖 Enhanced Bayesian Correction**: Implemented comprehensive correction for both weighted loss function bias and weighted sampling bias
 - **📊 Sampling Weights Tracking**: Added explicit tracking of sampling weights for more accurate correction
