@@ -1,5 +1,6 @@
 # Hierarchical Vision Transformer for Receipt Counting
 
+
 A robust computer vision system for counting receipts in images using a hierarchical classification approach with Vision Transformers and Bayesian calibration.
 
 ![Hierarchical Classification](https://via.placeholder.com/800x400?text=Hierarchical+Classification+System)
@@ -278,7 +279,7 @@ python hierarchical_predictor.py --mode predict --image receipt_collages/collage
 # Evaluate hierarchical model
 python hierarchical_predictor.py --mode evaluate --test_csv receipt_dataset_swinv2/test.csv \
                                --test_dir receipt_dataset_swinv2/test --output_dir evaluation/hierarchical \
-                               --model_base_path models/hierarchical --model_type swin
+                               --model_base_path models/hierarchical_swin --model_type swin
 
 # Sort a directory of images using the hierarchical model
 python hierarchical_predictor.py --mode sort --image_dir receipt_collages \
@@ -294,6 +295,57 @@ python hierarchical_demo.py --image_dir receipt_collages \
 ### Calibration and Correction
 
 ```bash
+
+  1. bayesian_temperature_calibration.py
+
+  usage: bayesian_temperature_calibration.py [-h] [--model_base_path MODEL_BASE_PATH]
+                                           [--model_type {vit,swin}]
+                                           [--level2_model_path LEVEL2_MODEL_PATH]
+                                           [--calibrate]
+                                           [--level1_temperature LEVEL1_TEMPERATURE]
+                                           [--level2_temperature LEVEL2_TEMPERATURE]
+                                           [--bayesian_temperature BAYESIAN_TEMPERATURE]
+                                           [--sweep]
+                                           [--min_temp MIN_TEMP] [--max_temp MAX_TEMP]
+                                           [--num_temps NUM_TEMPS]
+                                           [--log_scale]
+                                           [--optimize_metric {accuracy,balanced_accuracy,f1}]
+                                           [--use_best_temp] [--level1_weights LEVEL1_WEIGHTS]
+                                           [--level2_weights LEVEL2_WEIGHTS]
+                                           [--level1_freq LEVEL1_FREQ]
+                                           [--level2_freq LEVEL2_FREQ]
+                                           [--mode {predict,evaluate}]
+                                           [--image IMAGE]
+                                           [--test_csv TEST_CSV] [--test_dir TEST_DIR]
+                                           [--output_dir OUTPUT_DIR]
+                                           [--no-enhance] [--debug] [--use-cpu]
+
+  The most important parameters for basic usage:
+  - --mode {predict,evaluate}: Operation mode (predict a single image or evaluate on a dataset)
+  - --model_base_path: Base path to the hierarchical models (containing level1 and level2 subfolders)
+  - --image: Path to input image for prediction mode
+  - --test_csv and --test_dir: For evaluation mode, the test dataset CSV and directory
+  - --output_dir: Directory to save results
+
+  2. test_bayesian_calibration.py
+
+  usage: test_bayesian_calibration.py [-h] [--model_base_path MODEL_BASE_PATH]
+                                    [--model_type {vit,swin}]
+                                    [--test_csv TEST_CSV] [--test_dir TEST_DIR]
+                                    [--output_dir OUTPUT_DIR]
+                                    [--mode {threshold_sweep,bayesian_sweep,compare,all}]
+                                    [--level1_thresholds LEVEL1_THRESHOLDS]
+                                    [--level2_thresholds LEVEL2_THRESHOLDS]
+                                    [--bayesian_temps BAYESIAN_TEMPS]
+                                    [--no-enhance]
+
+  The most important parameters:
+  - --model_base_path: Base path to the hierarchical models
+  - --test_csv and --test_dir: The test dataset CSV and directory
+  - --output_dir: Directory to save results
+  - --mode: Testing mode (threshold_sweep, bayesian_sweep, compare, or all)
+
+  
 # Calibrate models with temperature scaling
 python bayesian_temperature_calibration.py \
     --calibrate \
