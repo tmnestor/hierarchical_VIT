@@ -40,3 +40,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 swinv2_update_helper.py
+
+# Ignore CLAUDE.md
+CLAUDE.md

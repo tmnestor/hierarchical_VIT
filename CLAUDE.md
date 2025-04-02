@@ -247,6 +247,7 @@ The hierarchical classification approach provides several advantages for the rec
 - Confidence scores are provided for each level of classification
 - Images can be automatically sorted into appropriate folders
 
+
 ### Usage
 The hierarchical approach is ideal when:
 - The dataset has imbalanced classes
